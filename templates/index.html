@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oil Palm Carbon Detection</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌴 Oil Palm Carbon Detection</h1>
+            <p>Upload satellite images to detect oil palm areas and estimate carbon stock</p>
+        </div>
+
+        <div class="upload-section">
+            <div class="upload-box" id="uploadBox">
+                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <h3>Drag & Drop Your Image</h3>
+                <p>or click to select</p>
+                <input type="file" id="imageInput" accept="image/*" hidden>
+            </div>
+        </div>
+
+        <div id="results" class="results-section" style="display:none;">
+            <div class="results-grid">
+                <div class="result-image">
+                    <h3>Detection Result</h3>
+                    <img id="resultImage" src="" alt="Detection Result">
+                </div>
+
+                <div class="result-stats">
+                    <h3>📊 Carbon Estimation Results</h3>
+                    <div class="stats-content">
+                        <div class="stat-item">
+                            <label>Objects Detected:</label>
+                            <span id="detectionCount" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <label>Total Area (Hectares):</label>
+                            <span id="areaHectares" class="stat-value">0.00</span>
+                        </div>
+                        <div class="stat-item">
+                            <label>Total Area (m²):</label>
+                            <span id="areaM2" class="stat-value">0.00</span>
+                        </div>
+                        <div class="stat-item">
+                            <label>Carbon Stock (tons):</label>
+                            <span id="carbonTons" class="stat-value">0.00</span>
+                        </div>
+                        <div class="stat-item highlight">
+                            <label>CO₂ Equivalent (tons):</label>
+                            <span id="carbonCO2" class="stat-value">0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="bboxes-info">
+                        <h4>Detected Objects:</h4>
+                        <div id="bboxList" class="bbox-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="resetBtn" class="btn-reset">Upload Another Image</button>
+        </div>
+
+        <div id="loading" class="loading" style="display:none;">
+            <div class="spinner"></div>
+            <p>Processing image...</p>
+        </div>
+
+        <div id="error" class="error-message" style="display:none;"></div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

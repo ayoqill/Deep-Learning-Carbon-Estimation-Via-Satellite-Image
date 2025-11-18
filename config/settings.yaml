@@ -1,0 +1,67 @@
+# Mangrove Carbon Estimation Pipeline Configuration
+
+# Pipeline phases
+pipeline:
+  run_phase: "all"  # Options: 'label', 'prepare', 'train', 'infer', 'visualize', 'all'
+
+# SAM-2 Annotation Settings
+sam2:
+  model_type: "hiera_large"  # 'hiera_large', 'hiera_base_plus', 'hiera_small', 'hiera_tiny'
+  config_file: "c:/Users/aniq/OneDrive/Desktop/Mangrove Carbon Estimation/sam2/sam2/configs/sam2/sam2_hiera_l.yaml"
+  checkpoint_path: "c:/Users/aniq/OneDrive/Desktop/Mangrove Carbon Estimation/sam2/checkpoints/sam2.1_hiera_large.pt"
+  device: "cpu"  # 'cuda' or 'cpu' (auto-detects if cuda available)
+  confidence_threshold: 0.5
+  prompt_type: "point"  # 'point' or 'box' (how to guide SAM-2)
+
+# Data Directories
+data:
+  images_dir: "data/raw_images/"          # Input: preprocessed .tif files
+  masks_dir: "data/masks/"                # Output: SAM-2 generated masks
+  training_data_dir: "data/training/"     # Prepared training data
+  validation_images_dir: "data/validation/"
+  output_dir: "results/"
+
+# Data Format
+dataset:
+  mask_format: "segmentation"  # 'segmentation' or 'yolo' (polygon format)
+  train_val_split: 0.8
+  image_extension: ".tif"
+  mask_extension: ".png"
+
+# Model Configuration
+model:
+  type: "unet"                # 'unet' or 'yolov8-seg'
+  name: "U-Net"
+  backbone: "resnet50"
+  input_channels: 4           # RGB + NDVI or 4-band from satellite
+  output_channels: 2          # mangrove vs non-mangrove (binary)
+  input_size: [256, 256]
+  learning_rate: 0.001
+  batch_size: 16
+  num_epochs: 50
+  optimizer: "adam"
+  loss_function: "cross_entropy"
+  checkpoint_path: "models/best_model.pt"
+
+# Training
+training:
+  validation_split: 0.2
+  early_stopping_patience: 5
+  metric_to_monitor: "iou"    # 'iou', 'f1', 'accuracy'
+
+# Carbon Estimation
+carbon:
+  pixel_size_m: 10            # Resolution in meters (Sentinel-2: 10m)
+  carbon_density_kg_ha: 150   # Literature-based carbon density (kg/ha)
+  # For mangroves: typically 100-200 tC/ha (refer to published papers)
+
+# Logging
+logging:
+  log_file: "logs/pipeline.log"
+  log_level: "INFO"
+
+# Visualization
+visualization:
+  output_plot_path: "results/plots/"
+  plot_format: "png"
+  save_intermediate_results: true
