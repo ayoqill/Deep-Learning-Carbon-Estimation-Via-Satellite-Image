@@ -54,11 +54,65 @@ def load_model():
         return False
 
 
-def get_bounding_boxes(mask, min_area=50):
-    """Extract bounding boxes from segmentation mask with improved detection"""
-    # Apply lighter morphological operations for speed
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2, 2))  # Smaller kernel
-    mask_cleaned = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)  # Only CLOSE
+def non_max_suppression(bboxes, iou_threshold=0.3):
+    """Remove overlapping bounding boxes using Non-Maximum Suppression"""
+    if len(bboxes) == 0:
+        return []
+    
+    # Convert to format for NMS
+    boxes = np.array([[b['x'], b['y'], b['x'] + b['width'], b['y'] + b['height']] 
+                      for b in bboxes])
+    scores = np.array([b['area_pixels'] for b in bboxes])
+    
+    # Calculate IoU for all pairs
+    keep = []
+    indices = np.argsort(scores)[::-1]
+    
+    while len(indices) > 0:
+        current = indices[0]
+        keep.append(current)
+        
+        if len(indices) == 1:
+            break
+        
+        # Calculate IoU with remaining boxes
+        current_box = boxes[current]
+        remaining_boxes = boxes[indices[1:]]
+        
+        # Calculate intersection
+        x1 = np.maximum(current_box[0], remaining_boxes[:, 0])
+        y1 = np.maximum(current_box[1], remaining_boxes[:, 1])
+        x2 = np.minimum(current_box[2], remaining_boxes[:, 2])
+        y2 = np.minimum(current_box[3], remaining_boxes[:, 3])
+        
+        intersection = np.maximum(0, x2 - x1) * np.maximum(0, y2 - y1)
+        
+        # Calculate union
+        area_current = (current_box[2] - current_box[0]) * (current_box[3] - current_box[1])
+        area_remaining = ((remaining_boxes[:, 2] - remaining_boxes[:, 0]) * 
+                         (remaining_boxes[:, 3] - remaining_boxes[:, 1]))
+        union = area_current + area_remaining - intersection
+        
+        # Calculate IoU
+        iou = intersection / union
+        
+        # Keep boxes with IoU below threshold
+        indices = indices[1:][iou < iou_threshold]
+    
+    return [bboxes[i] for i in keep]
+
+
+def get_bounding_boxes(mask, min_area=100, max_area=50000):
+    """Extract bounding boxes with improved filtering and shape validation"""
+    # Apply stronger morphological operations for better separation
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    mask_cleaned = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=2)
+    mask_cleaned = cv2.morphologyEx(mask_cleaned, cv2.MORPH_CLOSE, kernel, iterations=2)
+    
+    # Erode-dilate to separate touching objects
+    kernel_erode = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    mask_cleaned = cv2.erode(mask_cleaned, kernel_erode, iterations=1)
+    mask_cleaned = cv2.dilate(mask_cleaned, kernel_erode, iterations=1)
     
     # Find contours with hierarchy
     contours, hierarchy = cv2.findContours(
@@ -71,16 +125,28 @@ def get_bounding_boxes(mask, min_area=50):
     for idx, contour in enumerate(contours):
         area = cv2.contourArea(contour)
         
-        # Filter noise but keep smaller objects
-        if area < min_area:
+        # Filter by area range (remove noise and false detections)
+        if area < min_area or area > max_area:
             continue
         
         # Get bounding box
         x, y, w, h = cv2.boundingRect(contour)
         
-        # Calculate additional metrics
+        # Calculate shape metrics
         perimeter = cv2.arcLength(contour, True)
-        circularity = 4 * np.pi * area / (perimeter * perimeter) if perimeter > 0 else 0
+        if perimeter == 0:
+            continue
+        
+        circularity = 4 * np.pi * area / (perimeter * perimeter)
+        aspect_ratio = float(w) / h if h > 0 else 1.0
+        
+        # Filter by shape - oil palms are roughly circular
+        if circularity < 0.3:  # Too elongated/irregular
+            continue
+        
+        # Filter extreme aspect ratios
+        if aspect_ratio < 0.3 or aspect_ratio > 3.0:
+            continue
         
         # Get center point
         M = cv2.moments(contour)
@@ -101,17 +167,30 @@ def get_bounding_boxes(mask, min_area=50):
             'area_pixels': int(area),
             'perimeter': float(perimeter),
             'circularity': float(circularity),
-            'aspect_ratio': float(w / h) if h > 0 else 1.0
+            'aspect_ratio': float(aspect_ratio)
         })
     
     # Sort by area (largest first)
     bboxes.sort(key=lambda x: x['area_pixels'], reverse=True)
     
+    # Apply Non-Maximum Suppression to remove overlapping boxes
+    bboxes = non_max_suppression(bboxes, iou_threshold=0.3)
+    
+    # Reassign IDs after NMS
+    for idx, bbox in enumerate(bboxes):
+        bbox['id'] = idx + 1
+    
     return bboxes
 
 
-def segment_image(image_path, img_size=256):
-    """Run inference on image"""
+def segment_image(image_path, img_size=256, threshold=0.6):
+    """Run inference on image with adjustable threshold
+    
+    Args:
+        image_path: Path to input image
+        img_size: Size for model input (default 256)
+        threshold: Segmentation threshold 0-1 (default 0.6 for higher precision)
+    """
     try:
         # Read image
         image = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
@@ -141,7 +220,7 @@ def segment_image(image_path, img_size=256):
         
         # Resize back to working size
         mask = cv2.resize(pred, (w, h), interpolation=cv2.INTER_LINEAR)
-        binary_mask = (mask > 0.5).astype(np.uint8)
+        binary_mask = (mask > threshold).astype(np.uint8)  # Use adjustable threshold
         
         return image, binary_mask, mask
         
@@ -325,13 +404,13 @@ def upload_image():
         
         logger.info(f"Processing: {filename}")
         
-        # Segment image
-        image, binary_mask, prob_mask = segment_image(filepath)
+        # Segment image with higher threshold for better precision
+        image, binary_mask, prob_mask = segment_image(filepath, threshold=0.6)
         if image is None:
             return jsonify({'error': 'Failed to process image'}), 400
         
-        # Get bounding boxes (improved detection)
-        bboxes = get_bounding_boxes(binary_mask, min_area=50)
+        # Get bounding boxes with improved filtering
+        bboxes = get_bounding_boxes(binary_mask, min_area=100, max_area=50000)
         
         # Calculate carbon with detailed breakdown
         carbon_stats = calculate_carbon_detailed(bboxes)
