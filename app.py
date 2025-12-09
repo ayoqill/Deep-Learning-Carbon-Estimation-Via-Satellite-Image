@@ -56,10 +56,9 @@ def load_model():
 
 def get_bounding_boxes(mask, min_area=50):
     """Extract bounding boxes from segmentation mask with improved detection"""
-    # Apply morphological operations to separate touching objects
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-    mask_cleaned = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-    mask_cleaned = cv2.morphologyEx(mask_cleaned, cv2.MORPH_CLOSE, kernel)
+    # Apply lighter morphological operations for speed
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2, 2))  # Smaller kernel
+    mask_cleaned = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)  # Only CLOSE
     
     # Find contours with hierarchy
     contours, hierarchy = cv2.findContours(
@@ -121,8 +120,16 @@ def segment_image(image_path, img_size=256):
         
         h, w = image.shape[:2]
         
+        # Downscale large images for faster processing
+        max_size = 1024
+        if max(h, w) > max_size:
+            scale = max_size / max(h, w)
+            new_w, new_h = int(w * scale), int(h * scale)
+            image = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_AREA)
+            h, w = new_h, new_w
+        
         # Resize for model
-        image_resized = cv2.resize(image, (img_size, img_size))
+        image_resized = cv2.resize(image, (img_size, img_size), interpolation=cv2.INTER_LINEAR)
         image_normalized = image_resized.astype(np.float32) / 255.0
         image_tensor = torch.from_numpy(image_normalized).permute(2, 0, 1).unsqueeze(0)
         image_tensor = image_tensor.to(device)
@@ -132,8 +139,8 @@ def segment_image(image_path, img_size=256):
             output = model(image_tensor)
             pred = torch.sigmoid(output).cpu().numpy()[0, 0]
         
-        # Resize back to original
-        mask = cv2.resize(pred, (w, h))
+        # Resize back to working size
+        mask = cv2.resize(pred, (w, h), interpolation=cv2.INTER_LINEAR)
         binary_mask = (mask > 0.5).astype(np.uint8)
         
         return image, binary_mask, mask
@@ -218,12 +225,7 @@ def draw_results(image, bboxes, output_path, carbon_data=None):
         x, y, w, h = bbox['x'], bbox['y'], bbox['width'], bbox['height']
         color = colors[i % len(colors)]
         
-        # Draw filled rectangle with transparency
-        overlay = result_image.copy()
-        cv2.rectangle(overlay, (x, y), (x + w, y + h), color, -1)
-        result_image = cv2.addWeighted(result_image, 0.9, overlay, 0.1, 0)
-        
-        # Draw border
+        # Draw border only (no transparency overlay for speed)
         cv2.rectangle(result_image, (x, y), (x + w, y + h), color, 3)
         
         # Draw center point

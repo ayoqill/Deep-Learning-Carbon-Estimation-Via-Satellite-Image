@@ -4,6 +4,16 @@ const resultsSection = document.getElementById('results');
 const loadingDiv = document.getElementById('loading');
 const errorDiv = document.getElementById('error');
 const resetBtn = document.getElementById('resetBtn');
+const toast = document.getElementById('toast');
+
+// Toast notification function
+function showToast(message, type = 'info') {
+    toast.textContent = message;
+    toast.className = `toast toast-${type} show`;
+    setTimeout(() => {
+        toast.className = 'toast';
+    }, 3000);
+}
 
 // Upload box click
 uploadBox.addEventListener('click', () => imageInput.click());
@@ -47,6 +57,7 @@ async function handleImageUpload(file) {
     // Validate file
     if (!file.type.startsWith('image/')) {
         showError('Please select a valid image file');
+        showToast('Invalid file type. Please select an image.', 'error');
         return;
     }
 
@@ -55,6 +66,7 @@ async function handleImageUpload(file) {
     resultsSection.style.display = 'none';
     loadingDiv.style.display = 'flex';
     errorDiv.style.display = 'none';
+    showToast('Uploading image...', 'info');
 
     try {
         // Create form data
@@ -69,16 +81,19 @@ async function handleImageUpload(file) {
 
         const data = await response.json();
 
-        if (!response.ok) {
+        if (!response.ok || data.error) {
             showError(data.error || 'Upload failed');
+            showToast('Detection failed: ' + (data.error || 'Unknown error'), 'error');
             return;
         }
 
         // Display results
         displayResults(data);
+        showToast('Detection completed successfully!', 'success');
 
     } catch (error) {
         showError('Network error: ' + error.message);
+        showToast('Network error occurred', 'error');
     } finally {
         loadingDiv.style.display = 'none';
     }
