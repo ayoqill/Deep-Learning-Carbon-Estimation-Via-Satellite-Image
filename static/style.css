@@ -94,6 +94,7 @@ body {
 .result-image {
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .result-image h3 {
@@ -103,9 +104,13 @@ body {
 }
 
 .result-image img {
-    width: 100%;
+    width: 100% !important;
+    height: auto !important;
+    max-width: 100% !important;
+    object-fit: cover !important;
     border-radius: 10px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    display: block;
 }
 
 .result-stats {

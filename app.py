@@ -54,25 +54,59 @@ def load_model():
         return False
 
 
-def get_bounding_boxes(mask):
-    """Extract bounding boxes from segmentation mask"""
-    # Find contours
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+def get_bounding_boxes(mask, min_area=50):
+    """Extract bounding boxes from segmentation mask with improved detection"""
+    # Apply morphological operations to separate touching objects
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    mask_cleaned = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    mask_cleaned = cv2.morphologyEx(mask_cleaned, cv2.MORPH_CLOSE, kernel)
+    
+    # Find contours with hierarchy
+    contours, hierarchy = cv2.findContours(
+        mask_cleaned, 
+        cv2.RETR_EXTERNAL,  # Only external contours
+        cv2.CHAIN_APPROX_SIMPLE
+    )
     
     bboxes = []
-    for contour in contours:
+    for idx, contour in enumerate(contours):
         area = cv2.contourArea(contour)
-        if area < 100:  # Filter small noise
+        
+        # Filter noise but keep smaller objects
+        if area < min_area:
             continue
         
+        # Get bounding box
         x, y, w, h = cv2.boundingRect(contour)
+        
+        # Calculate additional metrics
+        perimeter = cv2.arcLength(contour, True)
+        circularity = 4 * np.pi * area / (perimeter * perimeter) if perimeter > 0 else 0
+        
+        # Get center point
+        M = cv2.moments(contour)
+        if M["m00"] != 0:
+            cx = int(M["m10"] / M["m00"])
+            cy = int(M["m01"] / M["m00"])
+        else:
+            cx, cy = x + w // 2, y + h // 2
+        
         bboxes.append({
+            'id': idx + 1,
             'x': int(x),
             'y': int(y),
             'width': int(w),
             'height': int(h),
-            'area_pixels': int(area)
+            'center_x': int(cx),
+            'center_y': int(cy),
+            'area_pixels': int(area),
+            'perimeter': float(perimeter),
+            'circularity': float(circularity),
+            'aspect_ratio': float(w / h) if h > 0 else 1.0
         })
+    
+    # Sort by area (largest first)
+    bboxes.sort(key=lambda x: x['area_pixels'], reverse=True)
     
     return bboxes
 
@@ -111,7 +145,7 @@ def segment_image(image_path, img_size=256):
 
 
 def calculate_carbon(mask, pixel_to_meters=10, carbon_density=150):
-    """Calculate carbon from segmentation mask"""
+    """Calculate carbon from segmentation mask (legacy function)"""
     palm_pixels = np.sum(mask > 0)
     area_m2 = palm_pixels * (pixel_to_meters ** 2)
     area_hectares = area_m2 / 10000
@@ -126,21 +160,129 @@ def calculate_carbon(mask, pixel_to_meters=10, carbon_density=150):
     }
 
 
-def draw_results(image, bboxes, output_path):
-    """Draw bounding boxes on image"""
+def calculate_carbon_detailed(bboxes, pixel_to_meters=10, carbon_density=150):
+    """Calculate carbon with per-object breakdown"""
+    total_pixels = sum(bbox['area_pixels'] for bbox in bboxes)
+    total_area_m2 = total_pixels * (pixel_to_meters ** 2)
+    total_area_hectares = total_area_m2 / 10000
+    total_carbon_tons = total_area_hectares * carbon_density
+    
+    # Calculate per-object stats
+    objects = []
+    for bbox in bboxes:
+        obj_area_m2 = bbox['area_pixels'] * (pixel_to_meters ** 2)
+        obj_area_ha = obj_area_m2 / 10000
+        obj_carbon = obj_area_ha * carbon_density
+        
+        objects.append({
+            'id': bbox['id'],
+            'area_pixels': bbox['area_pixels'],
+            'area_m2': round(obj_area_m2, 2),
+            'area_hectares': round(obj_area_ha, 4),
+            'carbon_tons': round(obj_carbon, 4),
+            'carbon_co2_tons': round(obj_carbon * 3.67, 4)
+        })
+    
+    return {
+        'total': {
+            'area_pixels': int(total_pixels),
+            'area_m2': float(total_area_m2),
+            'area_hectares': float(total_area_hectares),
+            'carbon_tons': float(total_carbon_tons),
+            'carbon_co2_tons': float(total_carbon_tons * 3.67)
+        },
+        'objects': objects,
+        'num_objects': len(bboxes),
+        'average_area_hectares': float(total_area_hectares / len(bboxes)) if bboxes else 0,
+        'average_carbon_tons': float(total_carbon_tons / len(bboxes)) if bboxes else 0
+    }
+
+
+def draw_results(image, bboxes, output_path, carbon_data=None):
+    """Draw bounding boxes with enhanced visualization"""
     result_image = image.copy()
     
-    # Draw bounding boxes
+    # Color palette for different objects
+    colors = [
+        (0, 255, 0),    # Green
+        (255, 0, 0),    # Blue
+        (0, 255, 255),  # Yellow
+        (255, 0, 255),  # Magenta
+        (0, 165, 255),  # Orange
+        (255, 255, 0),  # Cyan
+        (128, 0, 128),  # Purple
+        (0, 128, 255),  # Orange-Red
+    ]
+    
     for i, bbox in enumerate(bboxes):
         x, y, w, h = bbox['x'], bbox['y'], bbox['width'], bbox['height']
+        color = colors[i % len(colors)]
         
-        # Draw rectangle
-        cv2.rectangle(result_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        # Draw filled rectangle with transparency
+        overlay = result_image.copy()
+        cv2.rectangle(overlay, (x, y), (x + w, y + h), color, -1)
+        result_image = cv2.addWeighted(result_image, 0.9, overlay, 0.1, 0)
         
-        # Draw label
-        label = f"Palm {i+1}"
-        cv2.putText(result_image, label, (x, y - 10), 
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        # Draw border
+        cv2.rectangle(result_image, (x, y), (x + w, y + h), color, 3)
+        
+        # Draw center point
+        cx, cy = bbox['center_x'], bbox['center_y']
+        cv2.circle(result_image, (cx, cy), 5, color, -1)
+        
+        # Create detailed label
+        if carbon_data and i < len(carbon_data['objects']):
+            area_ha = carbon_data['objects'][i]['area_hectares']
+            label = f"#{i+1} | {area_ha:.3f} ha"
+        else:
+            area_ha = bbox['area_pixels'] * (10 ** 2) / 10000
+            label = f"#{i+1} | {area_ha:.3f} ha"
+        
+        # Draw label background
+        (label_w, label_h), baseline = cv2.getTextSize(
+            label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2
+        )
+        cv2.rectangle(
+            result_image, 
+            (x, y - label_h - baseline - 5), 
+            (x + label_w + 5, y), 
+            color, 
+            -1
+        )
+        
+        # Draw label text
+        cv2.putText(
+            result_image, 
+            label, 
+            (x + 2, y - baseline - 2), 
+            cv2.FONT_HERSHEY_SIMPLEX, 
+            0.6, 
+            (255, 255, 255), 
+            2
+        )
+        
+        # Draw object ID at center
+        cv2.putText(
+            result_image,
+            str(i + 1),
+            (cx - 10, cy + 10),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (255, 255, 255),
+            2
+        )
+    
+    # Add summary text
+    summary = f"Detected: {len(bboxes)} objects"
+    cv2.putText(
+        result_image,
+        summary,
+        (10, 30),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        1.0,
+        (0, 255, 0),
+        3
+    )
     
     # Save result
     cv2.imwrite(str(output_path), result_image)
@@ -186,15 +328,15 @@ def upload_image():
         if image is None:
             return jsonify({'error': 'Failed to process image'}), 400
         
-        # Get bounding boxes
-        bboxes = get_bounding_boxes(binary_mask)
+        # Get bounding boxes (improved detection)
+        bboxes = get_bounding_boxes(binary_mask, min_area=50)
         
-        # Calculate carbon
-        carbon_stats = calculate_carbon(binary_mask)
+        # Calculate carbon with detailed breakdown
+        carbon_stats = calculate_carbon_detailed(bboxes)
         
-        # Draw results
+        # Draw results (enhanced visualization)
         result_path = app.config['UPLOAD_FOLDER'] / f"result_{timestamp}.jpg"
-        draw_results(image, bboxes, result_path)
+        draw_results(image, bboxes, result_path, carbon_stats)
         
         # Prepare response
         response = {

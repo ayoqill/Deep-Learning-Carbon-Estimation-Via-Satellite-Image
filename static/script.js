@@ -88,22 +88,40 @@ function displayResults(data) {
     // Display image
     document.getElementById('resultImage').src = data.image;
 
-    // Display stats
+    // Display total stats
+    const carbonTotal = data.carbon.total || data.carbon;
     document.getElementById('detectionCount').textContent = data.num_detections;
-    document.getElementById('areaHectares').textContent = data.carbon.area_hectares.toFixed(2);
-    document.getElementById('areaM2').textContent = data.carbon.area_m2.toFixed(0);
-    document.getElementById('carbonTons').textContent = data.carbon.carbon_tons.toFixed(2);
-    document.getElementById('carbonCO2').textContent = data.carbon.carbon_co2_tons.toFixed(2);
+    document.getElementById('areaHectares').textContent = carbonTotal.area_hectares.toFixed(2);
+    document.getElementById('areaM2').textContent = carbonTotal.area_m2.toFixed(0);
+    document.getElementById('carbonTons').textContent = carbonTotal.carbon_tons.toFixed(2);
+    document.getElementById('carbonCO2').textContent = carbonTotal.carbon_co2_tons.toFixed(2);
 
-    // Display bboxes
+    // Display per-object breakdown
     const bboxList = document.getElementById('bboxList');
     bboxList.innerHTML = '';
+    
     data.bboxes.forEach((bbox, i) => {
         const item = document.createElement('div');
         item.className = 'bbox-item';
+        
+        // Get carbon data if available
+        let carbonInfo = '';
+        if (data.carbon.objects && data.carbon.objects[i]) {
+            const carbonData = data.carbon.objects[i];
+            carbonInfo = `
+                <span>Area: ${carbonData.area_hectares.toFixed(4)} ha</span><br>
+                <span>Carbon: ${carbonData.carbon_tons.toFixed(2)} tons C</span><br>
+                <span>CO₂: ${carbonData.carbon_co2_tons.toFixed(2)} tons</span>
+            `;
+        } else {
+            carbonInfo = `<span>Area: ${bbox.area_pixels} px</span>`;
+        }
+        
         item.innerHTML = `
-            <strong>Object ${i + 1}:</strong><br>
-            <span>Position: (${bbox.x}, ${bbox.y}) | Size: ${bbox.width}×${bbox.height} | Area: ${bbox.area_pixels} px</span>
+            <strong>Object ${bbox.id || (i + 1)}:</strong><br>
+            <span>Position: (${bbox.x}, ${bbox.y})</span><br>
+            <span>Size: ${bbox.width}×${bbox.height} px</span><br>
+            ${carbonInfo}
         `;
         bboxList.appendChild(item);
     });
