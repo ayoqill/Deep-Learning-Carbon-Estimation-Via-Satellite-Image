@@ -16,31 +16,31 @@ sam2:
 # Data Directories
 data:
   images_dir: "data/raw_images/"          # Input: preprocessed .tif files
-  masks_dir: "data/masks/"                # Output: SAM-2 generated masks
-  training_data_dir: "data/training/"     # Prepared training data
-  validation_images_dir: "data/validation/"
+  masks_dir: "data/refined_masks/"        # Output: refined binary masks
+  training_data_dir: "data/prepared/train/"     # Prepared training data
+  validation_images_dir: "data/prepared/val/"
   output_dir: "results/"
 
 # Data Format
 dataset:
-  mask_format: "segmentation"  # 'segmentation' or 'yolo' (polygon format)
+  mask_format: "segmentation"  # 'segmentation' (binary mask)
   train_val_split: 0.8
   image_extension: ".tif"
   mask_extension: ".png"
 
 # Model Configuration
 model:
-  type: "unet"                # 'unet' or 'yolov8-seg'
-  name: "U-Net"
-  backbone: "resnet50"
-  input_channels: 4           # RGB + NDVI or 4-band from satellite
-  output_channels: 2          # mangrove vs non-mangrove (binary)
+  type: "unetpp"              # 'unetpp', 'unet', or 'deeplabv3plus'
+  name: "U-Net++"
+  backbone: "resnet34"        # Recommended for U-Net++
+  input_channels: 3           # 3 for RGB, 4 if using NIR
+  output_channels: 1          # 1 for binary segmentation (mangrove vs non-mangrove)
   input_size: [256, 256]
   learning_rate: 0.001
   batch_size: 16
   num_epochs: 50
   optimizer: "adam"
-  loss_function: "cross_entropy"
+  loss_function: "bce"        # 'bce' for binary, 'cross_entropy' for multi-class
   checkpoint_path: "models/best_model.pt"
 
 # Training
@@ -51,8 +51,8 @@ training:
 
 # Carbon Estimation
 carbon:
-  pixel_size_m: 10            # Resolution in meters (Sentinel-2: 10m)
-  carbon_density_kg_ha: 150   # Literature-based carbon density (kg/ha)
+  pixel_size_m: 10            # Resolution in meters (update if your satellite is different)
+  carbon_density_kg_ha: 150   # Literature-based carbon density (kg/ha, update if you have local value)
   # For mangroves: typically 100-200 tC/ha (refer to published papers)
 
 # Logging
