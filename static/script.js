@@ -258,3 +258,33 @@ function showUserMenu(name) {
     userName.textContent = name;
     userInitial.textContent = '🧑🏻‍🔬';
 }
+
+// ===== Navbar scroll/fade effect =====
+(function() {
+    const navbar = document.getElementById('mainNavbar');
+    if (!navbar) return;
+    let lastScrollY = window.scrollY;
+    let ticking = false;
+    function onScroll() {
+        if (!ticking) {
+            window.requestAnimationFrame(() => {
+                const currentScrollY = window.scrollY;
+                if (currentScrollY > lastScrollY && currentScrollY > 40) {
+                    // Scrolling down
+                    navbar.style.opacity = '0';
+                    navbar.style.transform = 'translateY(-40px)';
+                    navbar.style.pointerEvents = 'none';
+                } else {
+                    // Scrolling up
+                    navbar.style.opacity = '1';
+                    navbar.style.transform = 'translateY(0)';
+                    navbar.style.pointerEvents = '';
+                }
+                lastScrollY = currentScrollY;
+                ticking = false;
+            });
+            ticking = true;
+        }
+    }
+    window.addEventListener('scroll', onScroll);
+})();

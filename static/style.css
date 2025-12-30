@@ -44,29 +44,25 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #000000;
-    background-image: 
-        radial-gradient(at 47% 33%, hsl(320, 100%, 36%) 0, transparent 59%), 
-        radial-gradient(at 82% 65%, hsl(218, 39%, 11%) 0, transparent 55%);
+    background: #f9fafb;
     min-height: 100vh;
     padding: 20px;
     position: relative;
     overflow-x: hidden;
 }
 
-body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: 
-        radial-gradient(circle at 20% 80%, rgba(102, 126, 234, 0.15) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(118, 75, 162, 0.15) 0%, transparent 50%);
-    pointer-events: none;
-    z-index: 0;
+body.grid-bg {
+    background-color: #f9fafb;
+    background-image:
+        linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px);
+    background-size: 32px 32px;
+    transition: background-position 0.5s cubic-bezier(.4,0,.2,1);
 }
+body.grid-bg:hover {
+    background-position: 16px 16px;
+}
+
 
 .container {
     max-width: 1200px;
@@ -190,26 +186,25 @@ body::before {
 }
 
 .result-stats h3 {
-    color: rgba(255, 255, 255, 0.9);
+    color: #222;
     margin-bottom: 20px;
     font-size: 1.3em;
 }
 
 .stats-content {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: #f8fafc;
     padding: 20px;
     border-radius: 15px;
     margin-bottom: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid #e5e7eb;
 }
 
 .stat-item {
     display: flex;
     justify-content: space-between;
     padding: 12px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid #e5e7eb;
+    color: #222;
 }
 
 .stat-item:last-child {
@@ -217,20 +212,19 @@ body::before {
 }
 
 .stat-item label {
-    color: rgba(255, 255, 255, 0.7);
+    color: #333;
     font-weight: 500;
 }
 
 .stat-value {
-    color: #8b9aff;
+    color: #3b82f6;
     font-weight: bold;
     font-size: 1.1em;
-    text-shadow: 0 0 10px rgba(139, 154, 255, 0.3);
 }
 
 .stat-item.highlight {
-    background: #667eea;
-    color: white;
+    background: #e0e7ff;
+    color: #222;
     padding: 15px;
     margin: 0 -20px -20px -20px;
     border-radius: 0 0 10px 10px;
@@ -238,22 +232,20 @@ body::before {
 
 .stat-item.highlight label,
 .stat-item.highlight .stat-value {
-    color: white;
+    color: #222;
 }
 
 .bboxes-info {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: #fff;
     padding: 20px;
     border-radius: 15px;
     max-height: 300px;
     overflow-y: auto;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid #e5e7eb;
 }
 
 .bboxes-info h4 {
-    color: rgba(255, 255, 255, 0.9);
+    color: #222;
     margin-bottom: 15px;
 }
 
@@ -264,19 +256,17 @@ body::before {
 }
 
 .bbox-item {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
+    background: #f3f4f6;
     padding: 10px;
     border-left: 4px solid #667eea;
     border-radius: 8px;
-    font-size: 0.9em;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.95em;
+    border: 1px solid #e5e7eb;
+    color: #222;
 }
 
 .bbox-item span {
-    color: rgba(255, 255, 255, 0.6);
+    color: #444;
 }
 
 /* Loading */
@@ -316,7 +306,7 @@ body::before {
     background: rgba(102, 126, 234, 0.2);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    color: white;
+    color: #3b82f6;
     border: 1px solid rgba(102, 126, 234, 0.5);
     border-radius: 12px;
     font-size: 1.1em;

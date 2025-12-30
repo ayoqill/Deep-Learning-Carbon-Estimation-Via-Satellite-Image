@@ -5,55 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mangrove Carbon Detection</title>
     <link rel="icon" href="/static/logo.png">
+    <link rel="stylesheet" href="/static/style.css">
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body {
-            background: #f8f9fa;
-            min-height: 100vh;
-        }
-        
-        /* Character jumping animation */
-        @keyframes move-out {
-            0% {
-                transform: translateY(0);
-            }
-            50% {
-                transform: translateY(-10px);
-            }
-            100% {
-                transform: translateY(0);
-            }
-        }
-
-        .text-animation span {
-            display: inline-block;
-        }
-
-        .group:hover .text-animation span {
-            animation: move-out 0.6s ease infinite;
-        }
-
-        .group:hover .text-animation span:nth-child(1) { animation-delay: 0s; }
-        .group:hover .text-animation span:nth-child(2) { animation-delay: 0.05s; }
-        .group:hover .text-animation span:nth-child(3) { animation-delay: 0.1s; }
-        .group:hover .text-animation span:nth-child(4) { animation-delay: 0.15s; }
-        .group:hover .text-animation span:nth-child(5) { animation-delay: 0.2s; }
-        .group:hover .text-animation span:nth-child(6) { animation-delay: 0.25s; }
-        .group:hover .text-animation span:nth-child(7) { animation-delay: 0.3s; }
-        .group:hover .text-animation span:nth-child(8) { animation-delay: 0.35s; }
-        .group:hover .text-animation span:nth-child(9) { animation-delay: 0.4s; }
-        .group:hover .text-animation span:nth-child(10) { animation-delay: 0.45s; }
-        .group:hover .text-animation span:nth-child(11) { animation-delay: 0.5s; }
-        .group:hover .text-animation span:nth-child(12) { animation-delay: 0.55s; }
-        .group:hover .text-animation span:nth-child(13) { animation-delay: 0.6s; }
-        .group:hover .text-animation span:nth-child(14) { animation-delay: 0.65s; }
-        .group:hover .text-animation span:nth-child(15) { animation-delay: 0.7s; }
-        .group:hover .text-animation span:nth-child(16) { animation-delay: 0.75s; }
-    </style>
 </head>
-<body class="font-sans">
+<body class="font-sans grid-bg">
     <!-- Navigation Bar -->
-    <nav class="bg-white border-b border-gray-200">
+    <nav id="mainNavbar" class="fixed top-0 left-0 w-full z-50 bg-white border-b border-gray-200 shadow-md transition-all duration-500 ease-in-out">
         <div class="px-6 py-4">
             <div class="flex items-center justify-between">
                 <!-- Logo and Brand Name -->
@@ -106,7 +63,7 @@
     </nav>
 
     <!-- Main Content -->
-    <div class="max-w-7xl mx-auto px-6 py-12">
+    <div class="max-w-7xl mx-auto px-6 py-12 mt-6">
         <!-- Process Steps Card -->
         <div class="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 mb-8">
             <div class="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12">
