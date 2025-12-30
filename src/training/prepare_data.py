@@ -98,13 +98,13 @@ def prepare_training_data(raw_images_dir, masks_dir, output_dir, train_ratio=0.7
 
 
 if __name__ == "__main__":
-    # Paths
+    # Paths - Using vegetation-only masks for v2 training
     raw_images_dir = Path(__file__).parent.parent.parent / "data" / "raw_images"
-    masks_dir = Path(__file__).parent.parent.parent / "data" / "masks"
+    masks_dir = Path(__file__).parent.parent.parent / "data" / "labeled_vegetation_only" / "masks"
     output_dir = Path(__file__).parent.parent.parent / "data" / "prepared"
     
     logger.info("=" * 70)
-    logger.info("Data Preparation for U-Net Training")
+    logger.info("Data Preparation for U-Net Training v2 (Vegetation-Only)")
     logger.info("=" * 70)
     
     prepare_training_data(raw_images_dir, masks_dir, output_dir)

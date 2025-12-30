@@ -147,7 +147,7 @@ class ImprovedTrainer:
         # Cosine annealing scheduler
         self.scheduler = optim.lr_scheduler.CosineAnnealingLR(
             self.optimizer, 
-            T_max=100,  # 100 epochs
+            T_max=30,  # 30 epochs for CPU
             eta_min=1e-6
         )
         
@@ -234,17 +234,17 @@ class ImprovedTrainer:
             if val_loss < self.best_val_loss:
                 self.best_val_loss = val_loss
                 self.best_model_state = self.model.state_dict().copy()
-                torch.save(self.best_model_state, save_dir / "unet_best.pt")
+                torch.save(self.best_model_state, save_dir / "unet_best_v2.pt")
                 logger.info(f"✓ New best model saved! (Val Loss: {val_loss:.4f})")
             
-            # Save checkpoint every 10 epochs
-            if epoch % 10 == 0:
-                checkpoint_path = save_dir / f"unet_epoch_{epoch}.pt"
+            # Save checkpoint every 5 epochs
+            if epoch % 5 == 0:
+                checkpoint_path = save_dir / f"unet_v2_epoch_{epoch}.pt"
                 torch.save(self.model.state_dict(), checkpoint_path)
                 logger.info(f"✓ Checkpoint saved: {checkpoint_path.name}")
         
-        # Save final model
-        final_path = save_dir / "unet_final_improved.pt"
+        # Save final model as v2
+        final_path = save_dir / "unet_final_v2.pt"
         torch.save(self.best_model_state, final_path)
         logger.info("\n" + "=" * 70)
         logger.info(f"✓ Training Complete!")
@@ -262,9 +262,9 @@ def main():
     
     # Hyperparameters
     IMG_SIZE = 256
-    BATCH_SIZE = 8
+    BATCH_SIZE = 4  # Reduced for CPU training
     LEARNING_RATE = 1e-4
-    EPOCHS = 100  # Increased from 50
+    EPOCHS = 30  # Reduced for CPU (was 100)
     
     # Device
     device = "cuda" if torch.cuda.is_available() else "cpu"

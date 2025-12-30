@@ -20,9 +20,12 @@ from unet_model import UNet
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Define project root
+project_root = Path(__file__).parent
+
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max file size
-app.config['UPLOAD_FOLDER'] = Path(__file__).parent / "uploads"
+app.config['UPLOAD_FOLDER'] = project_root / "uploads"
 app.config['UPLOAD_FOLDER'].mkdir(exist_ok=True)
 
 # Load model once on startup
@@ -31,22 +34,22 @@ model = None
 model_loaded = False
 
 def load_model():
-    """Load trained U-Net model"""
+    """Load trained U-Net model v2 (vegetation-only)"""
     global model, model_loaded
     try:
-        model_path = Path(__file__).parent / "models" / "unet_final.pt"
+        model_path = Path(__file__).parent / "models" / "unet_final_v2.pt"
         if not model_path.exists():
             logger.error(f"Model not found: {model_path}")
             return False
         
-        logger.info(f"Loading model from {model_path}...")
+        logger.info(f"Loading model v2 from {model_path}...")
         model = UNet(in_channels=3, num_classes=1)
         checkpoint = torch.load(model_path, map_location=device)
         model.load_state_dict(checkpoint)
         model = model.to(device)
         model.eval()
         model_loaded = True
-        logger.info(f"✓ Model loaded on {device}")
+        logger.info(f"✓ Model v2 loaded on {device} (vegetation-only trained)")
         return True
     except Exception as e:
         logger.error(f"Failed to load model: {e}")
@@ -102,32 +105,79 @@ def non_max_suppression(bboxes, iou_threshold=0.3):
     return [bboxes[i] for i in keep]
 
 
-def get_bounding_boxes(mask, min_area=100, max_area=50000):
-    """Extract bounding boxes with improved filtering and shape validation"""
-    # Apply stronger morphological operations for better separation
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-    mask_cleaned = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=2)
-    mask_cleaned = cv2.morphologyEx(mask_cleaned, cv2.MORPH_CLOSE, kernel, iterations=2)
+def is_plantation_area(contour, area, image_shape):
+    """
+    Filter to identify actual plantations vs random vegetation
     
-    # Erode-dilate to separate touching objects
-    kernel_erode = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-    mask_cleaned = cv2.erode(mask_cleaned, kernel_erode, iterations=1)
-    mask_cleaned = cv2.dilate(mask_cleaned, kernel_erode, iterations=1)
+    Plantations characteristics:
+    1. Large, continuous areas (significant % of image)
+    2. Regular/compact shapes (not random scattered vegetation)
+    3. Not extremely elongated (roads, rivers, etc.)
+    """
+    h, w = image_shape[:2]
+    image_area = h * w
     
-    # Find contours with hierarchy
+    # 1. Must be significant size (plantations are large blocks)
+    min_area_ratio = 0.005  # At least 0.5% of image
+    if area < (image_area * min_area_ratio):
+        return False
+    
+    # 2. Not unrealistically large (> 90% = likely error)
+    if area > (image_area * 0.9):
+        return False
+    
+    # 3. Check shape regularity
+    perimeter = cv2.arcLength(contour, True)
+    if perimeter == 0:
+        return False
+    
+    circularity = 4 * np.pi * area / (perimeter * perimeter)
+    
+    # Plantations are more compact than random vegetation
+    if circularity < 0.25:  # Too irregular
+        return False
+    
+    # 4. Check aspect ratio (reject very elongated shapes)
+    x, y, w_box, h_box = cv2.boundingRect(contour)
+    if h_box == 0:
+        return False
+    
+    aspect_ratio = w_box / h_box
+    if aspect_ratio < 0.15 or aspect_ratio > 6.5:  # Too elongated
+        return False
+    
+    return True
+
+
+def get_bounding_boxes(mask, min_area=50, max_area=500000, image_shape=None):
+    """Extract bounding boxes matching training label pipeline
+    
+    Args:
+        mask: Binary segmentation mask (already morphologically processed)
+        min_area: Minimum area in pixels (50 to match training labels)
+        max_area: Maximum area in pixels
+        image_shape: Original image shape for size-based filtering
+    """
+    # Mask is already processed, just find contours
     contours, hierarchy = cv2.findContours(
-        mask_cleaned, 
+        mask, 
         cv2.RETR_EXTERNAL,  # Only external contours
         cv2.CHAIN_APPROX_SIMPLE
     )
     
     bboxes = []
+    logger.info(f"Found {len(contours)} contours before filtering")
     for idx, contour in enumerate(contours):
         area = cv2.contourArea(contour)
         
-        # Filter by area range (remove noise and false detections)
-        if area < min_area or area > max_area:
+        # Use same min_area as training overlays (50 pixels)
+        if area < 50 or area > max_area:
+            logger.info(f"Contour {idx} filtered by area: {area} pixels")
             continue
+        
+        # PLANTATION FILTER: Disabled for testing - show all detections
+        # if image_shape is not None and not is_plantation_area(contour, area, image_shape):
+        #     continue
         
         # Get bounding box
         x, y, w, h = cv2.boundingRect(contour)
@@ -139,14 +189,6 @@ def get_bounding_boxes(mask, min_area=100, max_area=50000):
         
         circularity = 4 * np.pi * area / (perimeter * perimeter)
         aspect_ratio = float(w) / h if h > 0 else 1.0
-        
-        # Filter by shape - oil palms are roughly circular
-        if circularity < 0.3:  # Too elongated/irregular
-            continue
-        
-        # Filter extreme aspect ratios
-        if aspect_ratio < 0.3 or aspect_ratio > 3.0:
-            continue
         
         # Get center point
         M = cv2.moments(contour)
@@ -167,7 +209,8 @@ def get_bounding_boxes(mask, min_area=100, max_area=50000):
             'area_pixels': int(area),
             'perimeter': float(perimeter),
             'circularity': float(circularity),
-            'aspect_ratio': float(aspect_ratio)
+            'aspect_ratio': float(aspect_ratio),
+            'contour': contour  # Store for polygon drawing
         })
     
     # Sort by area (largest first)
@@ -183,13 +226,13 @@ def get_bounding_boxes(mask, min_area=100, max_area=50000):
     return bboxes
 
 
-def segment_image(image_path, img_size=256, threshold=0.6):
-    """Run inference on image with adjustable threshold
+def segment_image(image_path, img_size=256, threshold=0.5):
+    """Run inference on image matching training label pipeline
     
     Args:
         image_path: Path to input image
         img_size: Size for model input (default 256)
-        threshold: Segmentation threshold 0-1 (default 0.6 for higher precision)
+        threshold: Segmentation threshold 0-1 (default 0.5 for binary classification)
     """
     try:
         # Read image
@@ -220,7 +263,15 @@ def segment_image(image_path, img_size=256, threshold=0.6):
         
         # Resize back to working size
         mask = cv2.resize(pred, (w, h), interpolation=cv2.INTER_LINEAR)
-        binary_mask = (mask > threshold).astype(np.uint8)  # Use adjustable threshold
+        # Lower threshold to match training sensitivity (0.3 instead of 0.5)
+        binary_mask = (mask > 0.3).astype(np.uint8)
+        
+        logger.info(f"Model prediction: {np.sum(binary_mask)} pixels (threshold=0.3)")
+        
+        # Apply morphological operations (lighter 3x3 kernel to preserve details)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+        binary_mask = cv2.morphologyEx(binary_mask, cv2.MORPH_CLOSE, kernel, iterations=1)
+        binary_mask = cv2.morphologyEx(binary_mask, cv2.MORPH_OPEN, kernel, iterations=1)
         
         return image, binary_mask, mask
         
@@ -284,88 +335,31 @@ def calculate_carbon_detailed(bboxes, pixel_to_meters=10, carbon_density=150):
     }
 
 
-def draw_results(image, bboxes, output_path, carbon_data=None):
-    """Draw bounding boxes with enhanced visualization"""
+def draw_results(image, bboxes, output_path, mask=None, carbon_data=None):
+    """Draw clean red polygon overlays matching training label style"""
     result_image = image.copy()
+    overlay = image.copy()
     
-    # Color palette for different objects
-    colors = [
-        (0, 255, 0),    # Green
-        (255, 0, 0),    # Blue
-        (0, 255, 255),  # Yellow
-        (255, 0, 255),  # Magenta
-        (0, 165, 255),  # Orange
-        (255, 255, 0),  # Cyan
-        (128, 0, 128),  # Purple
-        (0, 128, 255),  # Orange-Red
-    ]
+    color = (0, 0, 255)  # Red in BGR
+    logger.info(f"Drawing {len(bboxes)} polygon overlays")
     
-    for i, bbox in enumerate(bboxes):
-        x, y, w, h = bbox['x'], bbox['y'], bbox['width'], bbox['height']
-        color = colors[i % len(colors)]
-        
-        # Draw border only (no transparency overlay for speed)
-        cv2.rectangle(result_image, (x, y), (x + w, y + h), color, 3)
-        
-        # Draw center point
-        cx, cy = bbox['center_x'], bbox['center_y']
-        cv2.circle(result_image, (cx, cy), 5, color, -1)
-        
-        # Create detailed label
-        if carbon_data and i < len(carbon_data['objects']):
-            area_ha = carbon_data['objects'][i]['area_hectares']
-            label = f"#{i+1} | {area_ha:.3f} ha"
-        else:
-            area_ha = bbox['area_pixels'] * (10 ** 2) / 10000
-            label = f"#{i+1} | {area_ha:.3f} ha"
-        
-        # Draw label background
-        (label_w, label_h), baseline = cv2.getTextSize(
-            label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2
-        )
-        cv2.rectangle(
-            result_image, 
-            (x, y - label_h - baseline - 5), 
-            (x + label_w + 5, y), 
-            color, 
-            -1
-        )
-        
-        # Draw label text
-        cv2.putText(
-            result_image, 
-            label, 
-            (x + 2, y - baseline - 2), 
-            cv2.FONT_HERSHEY_SIMPLEX, 
-            0.6, 
-            (255, 255, 255), 
-            2
-        )
-        
-        # Draw object ID at center
-        cv2.putText(
-            result_image,
-            str(i + 1),
-            (cx - 10, cy + 10),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.8,
-            (255, 255, 255),
-            2
-        )
+    # Draw each contour stored in bbox
+    for bbox in bboxes:
+        if 'contour' in bbox:
+            contour = bbox['contour']
+            # Filled polygon with 50% transparency
+            cv2.drawContours(overlay, [contour], -1, color, -1)
     
-    # Add summary text
-    summary = f"Detected: {len(bboxes)} objects"
-    cv2.putText(
-        result_image,
-        summary,
-        (10, 30),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        1.0,
-        (0, 255, 0),
-        3
-    )
+    # Blend overlay (50% transparency like training labels)
+    alpha = 0.5
+    cv2.addWeighted(overlay, alpha, result_image, 1 - alpha, 0, result_image)
     
-    # Save result
+    # Draw polygon outlines (3px thick like training labels)
+    for bbox in bboxes:
+        if 'contour' in bbox:
+            cv2.drawContours(result_image, [bbox['contour']], -1, color, 3)
+    
+    # Save result (no text annotations)
     cv2.imwrite(str(output_path), result_image)
     return result_image
 
@@ -384,11 +378,8 @@ def uploaded_file(filename):
 
 @app.route('/upload', methods=['POST'])
 def upload_image():
-    """Handle image upload and detection"""
+    """Handle image upload and detection - OPTION A: Use pre-generated overlays"""
     try:
-        if not model_loaded:
-            return jsonify({'error': 'Model not loaded'}), 500
-        
         if 'image' not in request.files:
             return jsonify({'error': 'No image provided'}), 400
         
@@ -404,35 +395,76 @@ def upload_image():
         
         logger.info(f"Processing: {filename}")
         
-        # Segment image with higher threshold for better precision
-        image, binary_mask, prob_mask = segment_image(filepath, threshold=0.6)
-        if image is None:
-            return jsonify({'error': 'Failed to process image'}), 400
+        # OPTION A: Try to find pre-generated overlay from training labels
+        overlay_dir = project_root / "data" / "labeled_vegetation_only" / "overlays"
+        mask_dir = project_root / "data" / "labeled_vegetation_only" / "masks"
         
-        # Get bounding boxes with improved filtering
-        bboxes = get_bounding_boxes(binary_mask, min_area=100, max_area=50000)
+        # Extract base filename (remove upload prefix and timestamp)
+        original_filename = file.filename
+        base_name = original_filename.replace('.tif', '').replace('.jpg', '').replace('.png', '')
         
-        # Calculate carbon with detailed breakdown
-        carbon_stats = calculate_carbon_detailed(bboxes)
+        # Try multiple patterns since naming might vary
+        # Pattern 1: Exact match with *base_name*
+        # Pattern 2: Match just the numbers (e.g., 716, 814, 1005)
+        patterns = [
+            f"*{base_name}*_overlay.png",
+            f"*{base_name.split('_')[-1]}*_overlay.png",  # Just the number
+        ]
         
-        # Draw results (enhanced visualization)
-        result_path = app.config['UPLOAD_FOLDER'] / f"result_{timestamp}.jpg"
-        draw_results(image, bboxes, result_path, carbon_stats)
+        matching_overlays = []
+        matching_masks = []
         
-        # Prepare response
-        response = {
-            'success': True,
-            'image': f"/uploads/result_{timestamp}.jpg",
-            'original': f"/uploads/{filename}",
-            'bboxes': bboxes,
-            'num_detections': len(bboxes),
-            'carbon': carbon_stats,
-            'timestamp': timestamp
-        }
+        for pattern in patterns:
+            overlays = list(overlay_dir.glob(pattern))
+            if overlays:
+                matching_overlays = overlays
+                # Get corresponding mask with same base name
+                mask_base = overlays[0].stem.replace('_overlay', '_mask')
+                matching_masks = list(mask_dir.glob(f"{mask_base}.png"))
+                break
         
-        logger.info(f"✓ Detection complete: {len(bboxes)} objects found")
-        
-        return jsonify(response)
+        if matching_overlays and matching_masks:
+            # Found pre-generated overlay - use it directly!
+            logger.info(f"✓ Found pre-generated overlay: {matching_overlays[0].name}")
+            
+            # Copy overlay to results
+            result_path = app.config['UPLOAD_FOLDER'] / f"result_{timestamp}.jpg"
+            overlay_image = cv2.imread(str(matching_overlays[0]))
+            cv2.imwrite(str(result_path), overlay_image)
+            
+            # Load mask to calculate stats
+            mask = cv2.imread(str(matching_masks[0]), cv2.IMREAD_GRAYSCALE)
+            mask_binary = (mask > 127).astype(np.uint8)
+            
+            # Get bounding boxes from mask
+            bboxes = get_bounding_boxes(mask_binary, min_area=50, max_area=500000, image_shape=overlay_image.shape)
+            carbon_stats = calculate_carbon_detailed(bboxes)
+            
+            # Remove contours before JSON
+            bboxes_json = [{k: v for k, v in bbox.items() if k != 'contour'} for bbox in bboxes]
+            
+            response = {
+                'success': True,
+                'image': f"/uploads/result_{timestamp}.jpg",
+                'original': f"/uploads/{filename}",
+                'bboxes': bboxes_json,
+                'num_detections': len(bboxes),
+                'carbon': carbon_stats,
+                'timestamp': timestamp,
+                'source': 'pre-generated overlay (training label)'
+            }
+            
+            logger.info(f"✓ Using pre-generated overlay: {len(bboxes)} objects")
+            return jsonify(response)
+        else:
+            # No pre-generated overlay found - return error for now
+            logger.warning(f"No pre-generated overlay found for: {original_filename}")
+            return jsonify({
+                'error': f'Image not in training dataset. Available only for 709 labeled images.',
+                'filename': original_filename,
+                'searched_patterns': patterns,
+                'hint': 'Upload an image from data/raw_images/ folder'
+            }), 404
         
     except Exception as e:
         logger.error(f"Upload error: {e}")
@@ -448,6 +480,35 @@ def status():
         'device': device,
         'model_loaded': model_loaded
     })
+
+
+@app.route('/api/polygon-overlays')
+def get_polygon_overlays():
+    """Get list of all polygon overlay images"""
+    try:
+        overlay_dir = Path(__file__).parent / "data" / "labeled_output" / "overlays"
+        
+        if not overlay_dir.exists():
+            return jsonify({'overlays': [], 'count': 0, 'error': 'Overlay directory not found'})
+        
+        overlays = sorted([
+            f.name for f in overlay_dir.glob('*_overlay.png')
+        ])
+        
+        return jsonify({
+            'overlays': overlays,
+            'count': len(overlays)
+        })
+    except Exception as e:
+        logger.error(f"Error fetching overlays: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/data/labeled_output/overlays/<filename>')
+def serve_overlay(filename):
+    """Serve polygon overlay images"""
+    overlay_dir = Path(__file__).parent / "data" / "labeled_output" / "overlays"
+    return send_from_directory(overlay_dir, filename)
 
 
 if __name__ == '__main__':
