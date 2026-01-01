@@ -13,14 +13,19 @@ import torch
 from pathlib import Path
 import sys
 import logging
+import importlib.util
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
-# Add SAM-2 to path (load from source directory)
-sam2_path = Path(__file__).parent.parent.parent.parent / "sam2"
-if sam2_path.exists():
-    sys.path.insert(0, str(sam2_path))
+# Fix dynamic import paths to use the correct absolute path for sam2/sam2
+sam2_dir = str(Path(__file__).resolve().parent.parent.parent / "sam2/sam2")
+sys.path.insert(0, sam2_dir)
+build_sam_spec = importlib.util.spec_from_file_location("build_sam", f"{sam2_dir}/build_sam.py")
+build_sam = importlib.util.module_from_spec(build_sam_spec)
+build_sam_spec.loader.exec_module(build_sam)
+sam2_image_predictor_spec = importlib.util.spec_from_file_location("sam2_image_predictor", f"{sam2_dir}/sam2_image_predictor.py")
+sam2_image_predictor = importlib.util.module_from_spec(sam2_image_predictor_spec)
+sam2_image_predictor_spec.loader.exec_module(sam2_image_predictor)
+build_sam2 = build_sam.build_sam2
+SAM2ImagePredictor = sam2_image_predictor.SAM2ImagePredictor
 
 try:
     from utils.config import Config
@@ -49,10 +54,6 @@ except ImportError:
 class SAM2Annotator:
     """
     Use SAM-2 (Segment Anything Model 2) to automatically segment mangroves.
-    
-    SAM-2 is a foundation model that can segment any object with minimal guidance
-    (points or bounding boxes). It's pre-trained on millions of images and works
-    across different domains (satellite imagery, photos, etc.).
     """
     
     def __init__(self, config_path="config/settings.yaml"):
@@ -76,44 +77,27 @@ class SAM2Annotator:
         logger.info(f"Initializing SAM-2 on {self.device}...")
         logger.info(f"Model type: {self.sam2_config.get('model_type')}")
         
-        try:
-            # Import SAM-2 
-            from sam2.build_sam import build_sam2
-            from sam2.sam2_image_predictor import SAM2ImagePredictor
-            
-            config_file = self.sam2_config.get('config_file')
-            checkpoint_path = self.sam2_config.get('checkpoint_path')
-            
-            # Validate paths exist
-            if not Path(checkpoint_path).exists():
-                raise FileNotFoundError(
-                    f"Checkpoint not found: {checkpoint_path}\n"
-                    f"Download from: https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_large.pt"
-                )
-            
-            # Build model
-            sam2_model = build_sam2(
-                config_file=config_file,
-                ckpt_path=checkpoint_path,
-                device=self.device
+        config_file = self.sam2_config.get('config_file')
+        checkpoint_path = self.sam2_config.get('checkpoint_path', 'sam2/checkpoints/sam2_hiera_large.pt')
+        
+        # Validate paths exist
+        if not Path(checkpoint_path).exists():
+            raise FileNotFoundError(
+                f"Checkpoint not found: {checkpoint_path}\n"
+                f"Download from: https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2_hiera_large.pt"
             )
-            
-            # Build predictor wrapper for image input/output handling
-            self.predictor = SAM2ImagePredictor(sam2_model)
-            
-            logger.info("✓ SAM-2 loaded successfully")
-            
-        except ImportError as e:
-            logger.error(
-                "SAM-2 not installed. Please run:\n"
-                "  git clone https://github.com/facebookresearch/sam2.git\n"
-                "  cd sam2\n"
-                "  pip install -e ."
-            )
-            raise
-        except Exception as e:
-            logger.error(f"Failed to initialize SAM-2: {e}")
-            raise
+        
+        # Build model
+        sam2_model = build_sam2(
+            config_file=config_file,
+            ckpt_path=checkpoint_path,
+            device=self.device
+        )
+        
+        # Build predictor wrapper for image input/output handling
+        self.predictor = SAM2ImagePredictor(sam2_model)
+        
+        logger.info("✓ SAM-2 loaded successfully")
     
     def segment_with_points(self, image_path, points, point_labels=None):
         """

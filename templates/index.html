@@ -1,277 +1,300 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mangrove Carbon Detection</title>
-    <link rel="icon" href="/static/logo.png">
-    <link rel="stylesheet" href="/static/style.css">
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mangrove Carbon Detection</title>
+  <link rel="icon" href="/static/logo.png">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="font-sans grid-bg">
-    <!-- Navigation Bar -->
-    <nav id="mainNavbar" class="fixed top-0 left-0 w-full z-50 bg-white border-b border-gray-200 shadow-md transition-all duration-500 ease-in-out">
-        <div class="px-6 py-4">
-            <div class="flex items-center justify-between">
-                <!-- Logo and Brand Name -->
-                <div class="flex items-center space-x-3">
-                    <img src="/static/logo.png" alt="Mangrove Carbon Mapper Logo" class="w-12 h-12 object-contain">
-                    <span class="text-xl font-semibold tracking-tight text-gray-800">Mangrove Carbon Mapping</span>
-                </div>
-
-                <!-- Navigation Links 
-                <div class="hidden md:flex items-center space-x-8 text-sm font-medium">
-                    <a href="#" class="text-gray-600 hover:text-gray-900 transition-colors">Product</a>
-                    <a href="#" class="text-gray-600 hover:text-gray-900 transition-colors">Features</a>
-                    <a href="#" class="text-gray-600 hover:text-gray-900 transition-colors">About</a>
-                    <a href="#" class="text-gray-600 hover:text-gray-900 transition-colors">Contact</a>
-                </div>
-                -->
-
-                <!-- Log in Button -->
-                <div class="flex items-center relative">
-                    <!-- Login Button (shown when not logged in) -->
-                    <button id="loginBtn" class="text-gray-600 hover:text-gray-900 transition-colors flex items-center space-x-1 text-sm font-medium">
-                        <span>Log in</span>
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                        </svg>
-                    </button>
-                    
-                    <!-- User Menu (shown when logged in) -->
-                    <div id="userMenu" class="hidden">
-                        <button id="userMenuBtn" class="text-gray-800 hover:text-gray-900 transition-colors flex items-center space-x-2 text-sm font-medium">
-                            <div class="w-8 h-8 bg-gray-800 text-white rounded-full flex items-center justify-center">
-                                <span id="userInitial" class="text-2xl">🧑🏻‍🔬</span>
-                            </div>
-                            <span id="userName">User</span>
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                            </svg>
-                        </button>
-                        
-                        <!-- Dropdown Menu -->
-                        <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                            <button id="logoutBtn" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
-                                Logout
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <div class="max-w-7xl mx-auto px-6 py-12 mt-6">
-        <!-- Process Steps Card -->
-        <div class="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 mb-8">
-            <div class="w-full flex justify-center items-center overflow-x-hidden">
-                <div class="flex flex-row items-center gap-8 md:gap-12 overflow-x-auto whitespace-nowrap min-w-0 max-w-[999px] w-full mx-auto" style="scroll-padding-left: 1px; scroll-snap-type: x mandatory;">
-                    <!-- Step 1: Upload Image -->
-                    <div class="flex flex-col items-center gap-4 group p-6 rounded-xl cursor-pointer min-w-[180px] flex-shrink-0" style="scroll-snap-align: start;">
-                        <img src="/static/satellite.png" alt="Upload" class="w-20 h-20 object-contain">
-                        <span class="text-2xl font-semibold text-gray-700 text-animation">
-                            <span class="jump">U</span><span class="jump">p</span><span class="jump">l</span><span class="jump">o</span><span class="jump">a</span><span class="jump">d</span><span class="jump">I</span><span class="jump">m</span><span class="jump">a</span><span class="jump">g</span><span class="jump">e</span>
-                        </span>
-                    </div>
-                    <!-- Arrow -->
-                    <div class="text-gray-400 flex-shrink-0 min-w-[60px]" style="scroll-snap-align: start;">
-                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                        </svg>
-                    </div>
-                    <!-- Step 2: Detect Mangroves -->
-                    <div class="flex flex-col items-center gap-4 group p-6 rounded-xl cursor-pointer min-w-[180px] flex-shrink-0" style="scroll-snap-align: start;">
-                        <img src="/static/tree.png" alt="Detect" class="w-20 h-20 object-contain">
-                        <span class="text-2xl font-semibold text-gray-700 text-animation">
-                            <span class="jump">D</span><span class="jump">e</span><span class="jump">t</span><span class="jump">e</span><span class="jump">c</span><span class="jump">t</span><span class="jump">M</span><span class="jump">a</span><span class="jump">n</span><span class="jump">g</span><span class="jump">r</span><span class="jump">o</span><span class="jump">v</span><span class="jump">e</span><span class="jump">s</span>
-                        </span>
-                    </div>
-                    <!-- Arrow -->
-                    <div class="text-gray-400 flex-shrink-0 min-w-[60px]" style="scroll-snap-align: start;">
-                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                        </svg>
-                    </div>
-                    <!-- Step 3: Estimate Carbon -->
-                    <div class="flex flex-col items-center gap-4 group p-6 rounded-xl cursor-pointer min-w-[180px] flex-shrink-0" style="scroll-snap-align: start;">
-                        <img src="/static/industry.png" alt="Estimate" class="w-20 h-20 object-contain">
-                        <span class="text-2xl font-semibold text-gray-700 text-animation">
-                            <span class="jump">E</span><span class="jump">s</span><span class="jump">t</span><span class="jump">i</span><span class="jump">m</span><span class="jump">a</span><span class="jump">t</span><span class="jump">e</span><span class="jump">C</span><span class="jump">a</span><span class="jump">r</span><span class="jump">b</span><span class="jump">o</span><span class="jump">n</span>
-                        </span>
-                    </div>
-                </div>
-            </div>
+  <!-- Navigation Bar -->
+  <nav id="mainNavbar" class="fixed top-0 left-0 w-full z-50 bg-white border-b border-gray-200 shadow-md transition-all duration-500 ease-in-out">
+    <div class="px-6 py-4">
+      <div class="flex items-center justify-between">
+        <!-- Logo and Brand Name -->
+        <div class="flex items-center space-x-3">
+          <img src="/static/logo.png" alt="Mangrove Carbon Mapper Logo" class="w-12 h-12 object-contain">
+          <span class="text-xl font-semibold tracking-tight text-gray-800">Mangrove Carbon Mapping</span>
         </div>
 
-        <!-- Main Content Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8 items-start">
-            <!-- Left Column - Main Upload Area -->
-            <div class="lg:col-span-2 w-full" id="mainContent">
-                <!-- Main Card -->
-                <div class="bg-white rounded-2xl p-4 sm:p-8 md:p-12 shadow-lg border border-gray-200">
-                    <!-- Header Section -->
-                    <div class="text-center mb-8 sm:mb-12 px-2" id="headerSection">
-                        <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-                            <span class="text-gray-800 text-center w-full">
-                                Satellite-Based Mangrove Carbon Estimation
-                            </span>
-                        </h1>
-                        <p class="text-base sm:text-lg text-gray-600 text-center">Upload satellite images to detect mangrove areas and estimate carbon stock</p>
-                    </div>
+        <!-- Log in Button / User Menu -->
+        <div class="flex items-center relative">
+          <!-- Login Button -->
+          <button id="loginBtn" class="text-gray-600 hover:text-gray-900 transition-colors flex items-center space-x-1 text-sm font-medium">
+            <span>Log in</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </button>
 
-                    <!-- Upload Section -->
-                    <div class="upload-section" id="uploadSection">
-                        <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 sm:p-16 md:p-20 text-center cursor-pointer transition-all duration-300 hover:border-blue-500 hover:bg-blue-50 hover:shadow-lg hover:-translate-y-1" id="uploadBox">
-                            <svg class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6 text-gray-400 transition-colors duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                            </svg>
-                            <h3 class="text-xl sm:text-2xl font-semibold text-gray-700 mb-2 transition-colors duration-300">Drag & Drop Your Image</h3>
-                            <p class="text-gray-500 transition-colors duration-300">or click to select</p>
-                            <input type="file" id="imageInput" accept="image/*" hidden>
-                        </div>
-                        
-                        <!-- Supported Formats -->
-                        <div class="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200 text-center">
-                            <p class="text-xs text-gray-500 mb-2">Supported formats: <span class="font-medium">GeoTIFF, PNG, JPG</span></p>
-                            <p class="text-xs text-gray-500">Best results with satellite imagery</p>
-                        </div>
-                    </div>
+          <!-- User Menu -->
+          <div id="userMenu" class="hidden">
+            <button id="userMenuBtn" class="text-gray-800 hover:text-gray-900 transition-colors flex items-center space-x-2 text-sm font-medium">
+              <div class="w-8 h-8 bg-gray-800 text-white rounded-full flex items-center justify-center">
+                <span id="userInitial" class="text-2xl">🧑🏻‍🔬</span>
+              </div>
+              <span id="userName">User</span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </button>
 
-            <!-- Results Section -->
-            <div id="results" class="mt-12" style="display:none;">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <!-- Detection Result Image -->
-                    <div class="bg-white rounded-xl p-6 border border-gray-200 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                        <h3 class="text-xl font-semibold text-gray-800 mb-4">Detection Result</h3>
-                        <img id="resultImage" src="" alt="Detection Result" class="w-full rounded-lg border border-gray-200 transition-transform duration-300">
-                    </div>
-
-                    <!-- Carbon Estimation Stats -->
-                    <div class="bg-white rounded-xl p-6 border border-gray-200 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                        <h3 class="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
-                            <span>📊</span> Carbon Estimation Results
-                        </h3>
-                        <div class="space-y-3">
-                            <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg border border-gray-200 transition-all duration-200 hover:border-blue-400 hover:bg-blue-50 hover:shadow-md">
-                                <label class="text-gray-700 font-medium">Objects Detected:</label>
-                                <span id="detectionCount" class="text-2xl font-semibold text-gray-800">0</span>
-                            </div>
-                            <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg border border-gray-200 transition-all duration-200 hover:border-green-400 hover:bg-green-50 hover:shadow-md">
-                                <label class="text-gray-700 font-medium">Total Area (Hectares):</label>
-                                <span id="areaHectares" class="text-2xl font-semibold text-gray-800">0.00</span>
-                            </div>
-                            <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg border border-gray-200 transition-all duration-200 hover:border-teal-400 hover:bg-teal-50 hover:shadow-md">
-                                <label class="text-gray-700 font-medium">Total Area (m²):</label>
-                                <span id="areaM2" class="text-2xl font-semibold text-gray-800">0.00</span>
-                            </div>
-                            <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg border border-gray-200 transition-all duration-200 hover:border-purple-400 hover:bg-purple-50 hover:shadow-md">
-                                <label class="text-gray-700 font-medium">Carbon Stock (tons):</label>
-                                <span id="carbonTons" class="text-2xl font-semibold text-gray-800">0.00</span>
-                            </div>
-                            <div class="flex justify-between items-center p-4 bg-gray-800 rounded-lg transition-all duration-200 hover:bg-gray-900 hover:shadow-lg hover:scale-105">
-                                <label class="text-white font-semibold">CO₂ Equivalent (tons):</label>
-                                <span id="carbonCO2" class="text-2xl font-semibold text-white">0.00</span>
-                            </div>
-                        </div>
-
-                        <!-- Detected Objects List -->
-                        <div class="mt-6">
-                            <h4 class="text-lg font-semibold text-gray-800 mb-3">Detected Objects:</h4>
-                            <div id="bboxList" class="space-y-2 max-h-48 overflow-y-auto bg-gray-50 p-3 rounded-lg border border-gray-200"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Reset Button -->
-                <div class="mt-8 text-center">
-                    <button id="resetBtn" class="px-8 py-3 bg-gray-800 text-white font-medium rounded-lg hover:bg-gray-900 transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95">
-                        Upload Another Image
-                    </button>
-                </div>
+            <!-- Dropdown Menu -->
+            <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+              <button id="logoutBtn" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                Logout
+              </button>
             </div>
-
-            <!-- Loading Spinner -->
-            <div id="loading" class="text-center py-12" style="display:none;">
-                <div class="inline-block animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-gray-800 mb-4 shadow-lg"></div>
-                <p class="text-gray-700 text-lg animate-pulse">Processing image...</p>
-            </div>
-
-            <!-- Error Message -->
-            <div id="error" class="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-center transition-all duration-300" style="display:none;"></div>
-                </div>
-            </div>
-
-            <!-- Right Column - Example Output -->
-            <div class="lg:col-span-1 self-start" id="exampleSidebar">
-                <div class="sticky top-6 space-y-6">
-                    <!-- Example Output Card -->
-                    <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
-                        <h3 class="text-xl font-semibold text-gray-800 mb-4">Example Output</h3>
-                        
-                        <!-- Example Image Placeholder -->
-                        <div class="mb-4 rounded-lg overflow-hidden border border-gray-200">
-                            <img id="exampleImage" src="/static/mangrove%20map.png" alt="Example Detection Output" class="w-full h-auto" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                            <div class="bg-gray-100 p-8 text-center text-gray-400" style="display:none;">
-                                <div class="text-4xl mb-2">📷</div>
-                                <p class="text-sm">Example image will be displayed here</p>
-                            </div>
-                        </div>
-                        
-                        <!-- Example Details -->
-                        <div class="space-y-3">
-                            <div class="flex items-center gap-2">
-                                <div class="text-gray-400">🌲</div>
-                                <p class="text-sm font-medium text-gray-700">What You'll Get?</p>
-                            </div>
-                            <div class="flex items-start gap-2">
-                                <div class="text-gray-400 leading-relaxed">•</div>
-                                <p class="text-sm text-gray-600">Mangrove regions accurately identified</p>
-                            </div>
-                            <div class="flex items-start gap-2">
-                                <div class="text-gray-400 leading-relaxed">•</div>
-                                <p class="text-sm text-gray-600">Estimated carbon stock and CO₂ equivalent</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Malaysia Map Card -->
-                    <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
-                        <div class="mb-3">
-                            <img src="/static/malaysiamap.png" alt="Malaysia Map" class="w-full h-auto">
-                        </div>
-                        <h2 class="text-sm text-gray-600 text-center">Optimized for Malaysian coastal </h2>
-                        <h2 class="text-sm text-gray-600 text-center">mangrove regions</h2>
-                    </div>
-                </div>
-            </div>
+          </div>
         </div>
+
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto px-6 py-12 mt-6">
+    <!-- Process Steps Card -->
+    <div class="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 mt-10 mb-8">
+      <div class="w-full flex justify-center items-center overflow-x-hidden">
+        <div class="flex flex-row items-center gap-8 md:gap-12 overflow-x-auto whitespace-nowrap min-w-0 max-w-[999px] w-full mx-auto" style="scroll-padding-left: 1px; scroll-snap-type: x mandatory;">
+          <!-- Step 1 -->
+          <div class="flex flex-col items-center gap-4 group p-6 rounded-xl cursor-pointer min-w-[180px] flex-shrink-0" style="scroll-snap-align: start;">
+            <img src="/static/satellite.png" alt="Upload" class="w-20 h-20 object-contain">
+            <span class="text-2xl font-semibold text-gray-700 text-animation">
+              <span class="jump">U</span><span class="jump">p</span><span class="jump">l</span><span class="jump">o</span><span class="jump">a</span><span class="jump">d</span><span class="jump">I</span><span class="jump">m</span><span class="jump">a</span><span class="jump">g</span><span class="jump">e</span>
+            </span>
+          </div>
+
+          <!-- Arrow -->
+          <div class="text-gray-400 flex-shrink-0 min-w-[60px]" style="scroll-snap-align: start;">
+            <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+            </svg>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="flex flex-col items-center gap-4 group p-6 rounded-xl cursor-pointer min-w-[180px] flex-shrink-0" style="scroll-snap-align: start;">
+            <img src="/static/tree.png" alt="Detect" class="w-20 h-20 object-contain">
+            <span class="text-2xl font-semibold text-gray-700 text-animation">
+              <span class="jump">D</span><span class="jump">e</span><span class="jump">t</span><span class="jump">e</span><span class="jump">c</span><span class="jump">t</span><span class="jump">M</span><span class="jump">a</span><span class="jump">n</span><span class="jump">g</span><span class="jump">r</span><span class="jump">o</span><span class="jump">v</span><span class="jump">e</span><span class="jump">s</span>
+            </span>
+          </div>
+
+          <!-- Arrow -->
+          <div class="text-gray-400 flex-shrink-0 min-w-[60px]" style="scroll-snap-align: start;">
+            <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+            </svg>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="flex flex-col items-center gap-4 group p-6 rounded-xl cursor-pointer min-w-[180px] flex-shrink-0" style="scroll-snap-align: start;">
+            <img src="/static/industry.png" alt="Estimate" class="w-20 h-20 object-contain">
+            <span class="text-2xl font-semibold text-gray-700 text-animation">
+              <span class="jump">E</span><span class="jump">s</span><span class="jump">t</span><span class="jump">i</span><span class="jump">m</span><span class="jump">a</span><span class="jump">t</span><span class="jump">e</span><span class="jump">C</span><span class="jump">a</span><span class="jump">r</span><span class="jump">b</span><span class="jump">o</span><span class="jump">n</span>
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Toast Notification (Fixed Position) -->
-    <div id="toast" class="fixed top-6 left-1/2 transform -translate-x-1/2 -translate-y-20 opacity-0 px-6 py-4 bg-green-500 text-white font-semibold rounded-xl shadow-2xl transition-all duration-300 z-50 max-w-md text-center"></div>
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8 items-start">
+      <!-- Left Column -->
+      <div class="lg:col-span-2 w-full" id="mainContent">
+        <div class="bg-white rounded-2xl p-4 sm:p-8 md:p-12 shadow-lg border border-gray-200">
+          <!-- Header Section -->
+          <div class="text-center mb-8 sm:mb-12 px-2" id="headerSection">
+            <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+              <span class="text-gray-800 text-center w-full">Satellite-Based Mangrove Carbon Estimation</span>
+            </h1>
+            <p class="text-base sm:text-lg text-gray-600 text-center">
+              Upload satellite images to detect mangrove areas and estimate carbon stock
+            </p>
+          </div>
 
-    <!-- Login Modal -->
-    <div id="loginModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
-            <h2 id="loginModalTitle" class="text-2xl font-bold text-gray-800 mb-2">Get Started</h2>
-            <form id="loginForm">
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Your Name</label>
-                    <input type="text" id="nameInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-800 focus:border-transparent outline-none" placeholder="Enter your name" required>
+          <!-- Upload Section -->
+          <div class="upload-section" id="uploadSection">
+            <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 sm:p-16 md:p-20 text-center cursor-pointer transition-all duration-300 hover:border-blue-500 hover:bg-blue-50 hover:shadow-lg hover:-translate-y-1" id="uploadBox">
+              <svg class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6 text-gray-400 transition-colors duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+              </svg>
+              <h3 class="text-xl sm:text-2xl font-semibold text-gray-700 mb-2 transition-colors duration-300">Drag & Drop Your Image</h3>
+              <p class="text-gray-500 transition-colors duration-300">or click to select</p>
+              <input type="file" id="imageInput" accept=".tif,.tiff,image/*" hidden>
+            </div>
+
+            <!-- Supported Formats -->
+            <div class="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200 text-center">
+              <p class="text-xs text-gray-500 mb-2">
+                Supported formats: <span class="font-medium">GeoTIFF, PNG, JPG</span>
+              </p>
+              <p class="text-xs text-gray-500">Best results with satellite imagery</p>
+              <!-- ✅ No user input, just an assumption note -->
+              <p class="text-xs text-gray-400 mt-2">
+                * For PNG/JPG, area & carbon assume <span class="font-medium">0.7 m/pixel</span>.
+              </p>
+            </div>
+          </div>
+
+          <!-- Results Section -->
+          <div id="results" class="mt-12" style="display:none;">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <!-- Detection Result Image -->
+              <div class="bg-white rounded-xl p-6 border border-gray-200 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">Detection Result</h3>
+                <img id="resultImage" src="" alt="Detection Result" class="w-full rounded-lg border border-gray-200 transition-transform duration-300">
+                <div class="mt-3 text-xs text-gray-500 flex flex-wrap gap-2">
+                  <span class="inline-flex items-center px-2 py-1 rounded bg-gray-50 border border-gray-200">
+                    Pixel size source: <span id="pixelSizeSource" class="ml-1 font-semibold">-</span>
+                  </span>
+                  <span class="inline-flex items-center px-2 py-1 rounded bg-gray-50 border border-gray-200">
+                    Pixel size (m): <span id="pixelSizeValue" class="ml-1 font-semibold">-</span>
+                  </span>
                 </div>
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                    <input type="password" id="passwordInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-800 focus:border-transparent outline-none" placeholder="Enter password" required>
+                <div id="warningBox" class="hidden mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-sm"></div>
+              </div>
+
+              <!-- Carbon Estimation Stats -->
+              <div class="bg-white rounded-xl p-6 border border-gray-200 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                <h3 class="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
+                  <span>📊</span> Carbon Estimation Results
+                </h3>
+
+                <div class="space-y-3">
+                  <!-- ✅ NEW: coverage percent (matches your Step 5 result) -->
+                  <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg border border-gray-200 transition-all duration-200 hover:border-green-400 hover:bg-green-50 hover:shadow-md">
+                    <label class="text-gray-700 font-medium">Mangrove Coverage (%):</label>
+                    <span id="coveragePercent" class="text-2xl font-semibold text-gray-800">0.00</span>
+                  </div>
+
+                  <!-- ✅ OLD object detection UI removed from pipeline, but keep as placeholder -->
+                  <div class="hidden flex justify-between items-center p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <label class="text-gray-700 font-medium">Objects Detected:</label>
+                    <span id="detectionCount" class="text-2xl font-semibold text-gray-800">0</span>
+                  </div>
+
+                  <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg border border-gray-200 transition-all duration-200 hover:border-green-400 hover:bg-green-50 hover:shadow-md">
+                    <label class="text-gray-700 font-medium">Total Area (Hectares):</label>
+                    <span id="areaHectares" class="text-2xl font-semibold text-gray-800">0.00</span>
+                  </div>
+
+                  <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg border border-gray-200 transition-all duration-200 hover:border-teal-400 hover:bg-teal-50 hover:shadow-md">
+                    <label class="text-gray-700 font-medium">Total Area (m²):</label>
+                    <span id="areaM2" class="text-2xl font-semibold text-gray-800">0.00</span>
+                  </div>
+
+                  <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg border border-gray-200 transition-all duration-200 hover:border-purple-400 hover:bg-purple-50 hover:shadow-md">
+                    <label class="text-gray-700 font-medium">Carbon Stock (tons):</label>
+                    <span id="carbonTons" class="text-2xl font-semibold text-gray-800">0.00</span>
+                  </div>
+
+                  <div class="flex justify-between items-center p-4 bg-gray-800 rounded-lg transition-all duration-200 hover:bg-gray-900 hover:shadow-lg hover:scale-105">
+                    <label class="text-white font-semibold">CO₂ Equivalent (tons):</label>
+                    <span id="carbonCO2" class="text-2xl font-semibold text-white">0.00</span>
+                  </div>
                 </div>
-                <button type="submit" class="w-full bg-gray-800 text-white py-3 rounded-lg font-medium hover:bg-gray-900 transition-colors">
-                    Continue
-                </button>
-            </form>
+
+                <!-- Detected Objects List (not used for current pipeline) -->
+                <div class="hidden mt-6">
+                  <h4 class="text-lg font-semibold text-gray-800 mb-3">Detected Objects:</h4>
+                  <div id="bboxList" class="space-y-2 max-h-48 overflow-y-auto bg-gray-50 p-3 rounded-lg border border-gray-200"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Reset Button -->
+            <div class="mt-8 text-center">
+              <button id="resetBtn" class="px-8 py-3 bg-gray-800 text-white font-medium rounded-lg hover:bg-gray-900 transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95">
+                Upload Another Image
+              </button>
+            </div>
+          </div>
+
+          <!-- Loading Spinner -->
+          <div id="loading" class="text-center py-12" style="display:none;">
+            <div class="inline-block animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-gray-800 mb-4 shadow-lg"></div>
+            <p class="text-gray-700 text-lg animate-pulse">Processing image...</p>
+          </div>
+
+          <!-- Error Message -->
+          <div id="error" class="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-center transition-all duration-300" style="display:none;"></div>
+
         </div>
-    </div>
+      </div>
 
-    <script src="/static/script.js"></script>
+      <!-- Right Column -->
+      <div class="lg:col-span-1 self-start" id="exampleSidebar">
+        <div class="sticky top-6 space-y-6">
+          <!-- Example Output Card -->
+          <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
+            <h3 class="text-xl font-semibold text-gray-800 mb-4">Example Output</h3>
+
+            <div class="mb-4 rounded-lg overflow-hidden border border-gray-200">
+              <img id="exampleImage" src="/static/mangrove%20map.png" alt="Example Detection Output" class="w-full h-auto"
+                   onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+              <div class="bg-gray-100 p-8 text-center text-gray-400" style="display:none;">
+                <div class="text-4xl mb-2">📷</div>
+                <p class="text-sm">Example image will be displayed here</p>
+              </div>
+            </div>
+
+            <div class="space-y-3">
+              <div class="flex items-center gap-2">
+                <div class="text-gray-400">🌲</div>
+                <p class="text-sm font-medium text-gray-700">What You'll Get?</p>
+              </div>
+              <div class="flex items-start gap-2">
+                <div class="text-gray-400 leading-relaxed">•</div>
+                <p class="text-sm text-gray-600">Mangrove regions accurately identified</p>
+              </div>
+              <div class="flex items-start gap-2">
+                <div class="text-gray-400 leading-relaxed">•</div>
+                <p class="text-sm text-gray-600">Estimated carbon stock and CO₂ equivalent</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Malaysia Map Card -->
+          <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
+            <div class="mb-3">
+              <img src="/static/malaysiamap.png" alt="Malaysia Map" class="w-full h-auto">
+            </div>
+            <h2 class="text-sm text-gray-600 text-center">Optimized for Malaysian coastal</h2>
+            <h2 class="text-sm text-gray-600 text-center">mangrove regions</h2>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed top-6 left-1/2 transform -translate-x-1/2 -translate-y-20 opacity-0 px-6 py-4 bg-green-500 text-white font-semibold rounded-xl shadow-2xl transition-all duration-300 z-50 max-w-md text-center"></div>
+
+  <!-- Login Modal -->
+  <div id="loginModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+      <h2 id="loginModalTitle" class="text-2xl font-bold text-gray-800 mb-2">Get Started</h2>
+      <form id="loginForm">
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Your Name</label>
+          <input type="text" id="nameInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-800 focus:border-transparent outline-none" placeholder="Enter your name" required>
+        </div>
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+          <input type="password" id="passwordInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-800 focus:border-transparent outline-none" placeholder="Enter password" required>
+        </div>
+        <button type="submit" class="w-full bg-gray-800 text-white py-3 rounded-lg font-medium hover:bg-gray-900 transition-colors">
+          Continue
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/static/script.js"></script>
 </body>
 </html>
