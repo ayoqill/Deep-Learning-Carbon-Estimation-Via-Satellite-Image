@@ -243,6 +243,11 @@ def index():
     return render_template("index.html")
 
 
+@app.route("/insight")
+def insight():
+    return render_template("insight.html")
+
+
 @app.route("/uploads/<path:filename>")
 def serve_uploads(filename):
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
