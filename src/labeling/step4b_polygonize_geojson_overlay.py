@@ -27,7 +27,7 @@ OUT_GEOJSON = Path("data/polygons.geojson")
 # -------------------------
 # TUNING (safe defaults)
 # -------------------------
-MIN_AREA_PX = 120        # remove tiny polygons/noise (increase if too many small shapes)
+MIN_AREA_PX = 120        # remove tiny polygons/noise (keeping original to be safe)
 MORPH_KERNEL = 3         # 3 or 5 (bigger = smoother, may remove thin details)
 APPROX_EPS = 2.0         # polygon simplification in pixels (2-5 good)
 OUTLINE_THICKNESS = 2    # red outline thickness
@@ -102,7 +102,7 @@ def clean_mask(mask_255: np.ndarray):
     k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (MORPH_KERNEL, MORPH_KERNEL))
     cleaned = cv2.morphologyEx(cleaned, cv2.MORPH_CLOSE, k, iterations=1)
 
-    # Additional dilation step
+    # Additional dilation step - restored to original settings
     k2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
     cleaned = cv2.dilate(cleaned, k2, iterations=2)
 

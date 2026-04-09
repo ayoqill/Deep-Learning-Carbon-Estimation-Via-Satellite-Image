@@ -63,7 +63,7 @@ def load_image_any(
 
     Notes:
       - For PNG/JPG and model_in_channels==4, pads NIR with zeros (accuracy may drop).
-      - For TIFF, assumes common order B,G,R,(NIR) when bands>=4.
+      - For TIFF, assumes band order R,G,B,(NIR) when bands>=4 (matches training data order).
     """
     ext = path.suffix.lower()
 
@@ -103,14 +103,14 @@ def load_image_any(
             model_raw = arr_hw_c[:, :, :4]
             model_img = normalize_per_channel_percentile(model_raw)
 
-            # display RGB: assume B,G,R,(NIR) -> RGB = (R,G,B) = (2,1,0)
-            rgb_raw = np.stack([model_raw[:, :, 2], model_raw[:, :, 1], model_raw[:, :, 0]], axis=-1)
+            # display RGB: assume R,G,B,(NIR) -> RGB = (R,G,B) = (0,1,2)
+            rgb_raw = np.stack([model_raw[:, :, 0], model_raw[:, :, 1], model_raw[:, :, 2]], axis=-1)
             rgb_img = normalize_per_channel_percentile(rgb_raw)
 
         elif model_in_channels == 3:
             if bands < 3:
                 raise ValueError("TIFF has <3 bands; cannot form RGB inference.")
-            rgb_raw = np.stack([arr_hw_c[:, :, 2], arr_hw_c[:, :, 1], arr_hw_c[:, :, 0]], axis=-1)
+            rgb_raw = np.stack([arr_hw_c[:, :, 0], arr_hw_c[:, :, 1], arr_hw_c[:, :, 2]], axis=-1)
             rgb_img = normalize_per_channel_percentile(rgb_raw)
             model_img = rgb_img
 

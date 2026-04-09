@@ -22,7 +22,11 @@ OUT_JSON        = OUT_DIR / "pred_stats.json"
 PAD_TO = 160  # keep if your training padded to 160
 
 # Threshold
-THRESH = 0.5
+# Optimized to 0.45 - best balance between coverage and noise reduction
+# Original 0.5 was too conservative (3.12% coverage)
+# 0.35 added too much noise
+# 0.45 achieves ~10.8% coverage with good accuracy
+THRESH = 0.45
 
 # Apple Silicon / CUDA / CPU
 if torch.backends.mps.is_available() and torch.backends.mps.is_built():

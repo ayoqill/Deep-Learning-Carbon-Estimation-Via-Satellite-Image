@@ -53,7 +53,7 @@ TILE_OVERLAP = 32      # try 16/32/64
 BATCH_TILES = 24       # lower if MPS memory issues
 
 # If PNG/JPG has no geo metadata
-DEFAULT_PIXEL_SIZE_M = 0.7
+DEFAULT_PIXEL_SIZE_M = 10.0
 
 # Carbon density placeholder (set later from literature)
 DEFAULT_CARBON_DENSITY_TON_PER_HA = 150.0
@@ -160,7 +160,6 @@ def _pad_to_tile(img: np.ndarray, tile_h: int, tile_w: int, stride: int):
 def predict_mask_tiled(model_img: np.ndarray) -> np.ndarray:
     if model is None:
         raise RuntimeError("Model not loaded")
-
     stride = TILE_W - TILE_OVERLAP
     if stride <= 0:
         raise ValueError("TILE_OVERLAP must be < TILE_W")
@@ -192,17 +191,15 @@ def predict_mask_tiled(model_img: np.ndarray) -> np.ndarray:
         for x0 in range(0, Wp - TILE_W + 1, stride):
             tiles.append(img_pad[y:y + TILE_H, x0:x0 + TILE_W, :])
             coords.append((y, x0))
-
             if len(tiles) >= BATCH_TILES:
                 run_batch(tiles, coords)
                 tiles, coords = [], []
 
     run_batch(tiles, coords)
-
     prob_avg = prob_sum / np.maximum(prob_cnt, 1e-6)
     prob_avg = prob_avg[:H0, :W0]
 
-    return (prob_avg >= 0.5).astype(np.uint8)
+    return prob_avg
 
 
 # -----------------------------
@@ -318,8 +315,12 @@ def upload():
             pixel_size_m = DEFAULT_PIXEL_SIZE_M
             pixel_size_note = "default"
 
-        # inference
-        mask01 = predict_mask_tiled(model_img)
+        # inference - returns probability map (float32)
+        prob_map = predict_mask_tiled(model_img)
+        
+        # Apply threshold to convert to binary mask
+        DETECTION_THRESHOLD = 0.45
+        mask01 = (prob_map >= DETECTION_THRESHOLD).astype(np.uint8)
 
         # run folder + standard paths via utils/io.py
         run_dir = create_run_dir(RESULTS_DIR, timestamp)
