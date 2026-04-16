@@ -2,7 +2,7 @@
 # Pipeline:
 # 1) Upload (PNG/JPG/TIF)
 # 2) Load image via utils.io.load_image_any()
-# 3) U-Net++ tiling inference -> mask
+# 3) Model inference (U-Net++ or DeepLabV3+) with tiling
 # 4) Save pred_mask.png + overlay.png + step5_results.json via utils.io
 # 5) Return JSON mapped to frontend
 
@@ -43,7 +43,11 @@ app.config["UPLOAD_FOLDER"].mkdir(parents=True, exist_ok=True)
 RESULTS_DIR = project_root / "results"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-MODEL_PATH = project_root / "models" / "unetpp_best.pth"
+# Define multiple models
+MODEL_PATHS = {
+    "unetpp": project_root / "models" / "unetpp_best.pth",
+    "deeplabv3": project_root / "models" / "deeplabv3" / "deeplabv3_best.pth"
+}
 
 # Training tile size
 TILE_H, TILE_W = 160, 160
@@ -66,9 +70,9 @@ logger.info(f"Using device: {DEVICE}")
 ENCODER_NAME = "resnet34"
 ENCODER_WEIGHTS = None
 
-# Model cache
-model = None
-model_in_channels = None
+# Model cache (Dictionary to hold multiple models)
+loaded_models = {}
+model_in_channels = {}
 
 
 # -----------------------------
@@ -95,18 +99,19 @@ def _infer_in_channels_from_state_dict(state: dict) -> int:
     return 3
 
 
-def load_model_once() -> bool:
-    global model, model_in_channels
+def load_model(model_name: str) -> bool:
+    global loaded_models, model_in_channels
 
-    if model is not None:
+    if model_name in loaded_models:
         return True
 
-    if not MODEL_PATH.exists():
-        logger.error(f"Model not found: {MODEL_PATH}")
+    model_path = MODEL_PATHS.get(model_name)
+    if not model_path or not model_path.exists():
+        logger.error(f"Model not found: {model_path}")
         return False
 
-    logger.info(f"Loading model from: {MODEL_PATH}")
-    state = torch.load(str(MODEL_PATH), map_location=DEVICE)
+    logger.info(f"Loading {model_name} from: {model_path}")
+    state = torch.load(str(model_path), map_location=DEVICE)
 
     # Handle wrapped checkpoints
     if isinstance(state, dict) and "state_dict" in state and isinstance(state["state_dict"], dict):
@@ -119,21 +124,37 @@ def load_model_once() -> bool:
         return False
 
     state = _strip_module_prefix(state)
-    model_in_channels = _infer_in_channels_from_state_dict(state)
-    logger.info(f"Detected model in_channels: {model_in_channels}")
+    channels = _infer_in_channels_from_state_dict(state)
+    model_in_channels[model_name] = channels
+    logger.info(f"Detected {model_name} in_channels: {channels}")
 
-    model = smp.UnetPlusPlus(
-        encoder_name=ENCODER_NAME,
-        encoder_weights=ENCODER_WEIGHTS,
-        in_channels=model_in_channels,
-        classes=1,
-        activation=None
-    ).to(DEVICE)
+    # Initialize correct architecture
+    if model_name == "unetpp":
+        model = smp.UnetPlusPlus(
+            encoder_name=ENCODER_NAME,
+            encoder_weights=ENCODER_WEIGHTS,
+            in_channels=channels,
+            classes=1,
+            activation=None
+        ).to(DEVICE)
+    elif model_name == "deeplabv3":
+        model = smp.DeepLabV3Plus(
+            encoder_name=ENCODER_NAME,
+            encoder_weights=ENCODER_WEIGHTS,
+            in_channels=channels,
+            classes=1,
+            activation=None
+        ).to(DEVICE)
+    else:
+        logger.error(f"Unknown model: {model_name}")
+        return False
 
     model.load_state_dict(state, strict=True)
     model.eval()
+    
+    loaded_models[model_name] = model
 
-    logger.info("✅ Model loaded and ready.")
+    logger.info(f"✅ {model_name} loaded and ready.")
     return True
 
 
@@ -157,9 +178,10 @@ def _pad_to_tile(img: np.ndarray, tile_h: int, tile_w: int, stride: int):
     return img_pad, H, W
 
 
-def predict_mask_tiled(model_img: np.ndarray) -> np.ndarray:
+def predict_mask_tiled(model_img: np.ndarray, model_name: str) -> np.ndarray:
+    model = loaded_models.get(model_name)
     if model is None:
-        raise RuntimeError("Model not loaded")
+        raise RuntimeError(f"Model {model_name} not loaded")
     stride = TILE_W - TILE_OVERLAP
     if stride <= 0:
         raise ValueError("TILE_OVERLAP must be < TILE_W")
@@ -258,17 +280,19 @@ def serve_results(filename):
 @app.route("/status")
 def status():
     return jsonify({
-        "status": "ready" if model is not None else "not_loaded",
+        "status": "ready" if loaded_models else "not_loaded",
         "device": DEVICE,
-        "model_path": str(MODEL_PATH),
+        "loaded_models": list(loaded_models.keys()),
         "model_in_channels": model_in_channels
     })
 
 
 @app.route("/upload", methods=["POST"])
 def upload():
-    if not load_model_once():
-        return jsonify({"success": False, "error": "Model failed to load"}), 500
+    model_choice = request.form.get("model", "unetpp")  # default to unetpp
+    
+    if not load_model(model_choice):
+        return jsonify({"success": False, "error": f"Model {model_choice} failed to load"}), 500
 
     if "image" not in request.files:
         return jsonify({"success": False, "error": "No image provided"}), 400
@@ -298,10 +322,11 @@ def upload():
     file.save(upload_path)
 
     try:
+        current_channels = model_in_channels[model_choice]
         # Use utils/io.py
         model_img, rgb_img, pixel_size_from_tif, tif_source = load_image_any(
             upload_path,
-            model_in_channels=model_in_channels
+            model_in_channels=current_channels
         )
 
         # decide pixel size (tif beats user beats default)
@@ -316,7 +341,7 @@ def upload():
             pixel_size_note = "default"
 
         # inference - returns probability map (float32)
-        prob_map = predict_mask_tiled(model_img)
+        prob_map = predict_mask_tiled(model_img, model_choice)
         
         # Apply threshold to convert to binary mask
         DETECTION_THRESHOLD = 0.001
@@ -347,12 +372,13 @@ def upload():
 
             "pixel_size_m": results["pixel_size_m"],
             "pixel_size_source": pixel_size_note,
-            "model_in_channels": model_in_channels,
+            "used_model": model_choice,
+            "model_in_channels": current_channels,
             "warning": None
         }
 
         # warn if 4ch model but user used PNG/JPG (NIR padded zeros)
-        if model_in_channels == 4 and upload_path.suffix.lower() in [".png", ".jpg", ".jpeg"]:
+        if current_channels == 4 and upload_path.suffix.lower() in [".png", ".jpg", ".jpeg"]:
             response["warning"] = (
                 "Model expects 4 bands. PNG/JPG has 3 bands; NIR was padded with zeros (accuracy may drop). "
                 "Use GeoTIFF for best results."
@@ -373,10 +399,16 @@ if __name__ == "__main__":
     logger.info("Starting Mangrove Carbon Web App")
     logger.info("=" * 60)
 
-    ok = load_model_once()
-    if not ok:
-        logger.error("❌ Model not loaded. Fix model path or checkpoint.")
-    else:
-        logger.info("✅ Open: http://localhost:5000")
+# Run
+# -----------------------------
+if __name__ == "__main__":
+    logger.info("=" * 60)
+    logger.info("Starting Mangrove Carbon Web App")
+    logger.info("=" * 60)
+
+    # Preload default model (optional)
+    load_model("unetpp")
+    
+    logger.info("✅ Open: http://localhost:5000")
 
     app.run(debug=False, host="0.0.0.0", port=5000, use_reloader=False)
