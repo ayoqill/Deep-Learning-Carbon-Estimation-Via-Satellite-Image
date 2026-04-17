@@ -344,7 +344,7 @@ def upload():
         prob_map = predict_mask_tiled(model_img, model_choice)
         
         # Apply threshold to convert to binary mask
-        DETECTION_THRESHOLD = 0.001
+        DETECTION_THRESHOLD = 0.01
         mask01 = (prob_map >= DETECTION_THRESHOLD).astype(np.uint8)
 
         # run folder + standard paths via utils/io.py
