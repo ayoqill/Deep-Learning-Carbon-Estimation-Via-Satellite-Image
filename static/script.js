@@ -168,19 +168,8 @@ async function handleImageUpload(file) {
   showToast('Uploading image...', 'info');
 
   try {
-    // Get selected model
-    const modelRadios = document.querySelectorAll('input[name="model"]');
-    let selectedModel = 'unetpp';
-    for (const radio of modelRadios) {
-      if (radio.checked) {
-        selectedModel = radio.value;
-        break;
-      }
-    }
-
     const formData = new FormData();
     formData.append('image', file);
-    formData.append('model', selectedModel);
 
     const response = await fetch('/upload', { method: 'POST', body: formData });
     const data = await response.json().catch(() => ({}));
@@ -246,12 +235,6 @@ function displayResults(data) {
   // warning
   setWarning(data.warning || null);
 
-  // model info (display which model was used)
-  if (data.used_model) {
-    const modelName = data.used_model === 'unetpp' ? 'U-Net++' : 'DeepLabV3+';
-    showToast(`Result from ${modelName} model`, 'success');
-  }
-
   // show results
   if (resultsSection) resultsSection.style.display = 'block';
   if (uploadBox) uploadBox.style.display = 'none';
@@ -260,10 +243,25 @@ function displayResults(data) {
 // =========================
 // Auth (UI only - localStorage)
 // =========================
-window.addEventListener('DOMContentLoaded', () => {
-  const storedName = localStorage.getItem('userName');
-  if (storedName) showUserMenu(storedName);
+window.addEventListener('DOMContentLoaded', async () => {
+  // Check authentication status from backend
+  try {
+    const response = await fetch('/auth_status', {
+      credentials: 'include'
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.authenticated && data.username) {
+        showUserMenu(data.username);
+        localStorage.setItem('userName', data.username);
+      }
+    }
+  } catch (error) {
+    console.error('Auth status check error:', error);
+  }
 });
+
 
 if (loginBtn && loginModal) {
   loginBtn.addEventListener('click', () => loginModal.classList.remove('hidden'));
@@ -304,12 +302,26 @@ document.addEventListener('click', () => {
 });
 
 if (logoutBtn) {
-  logoutBtn.addEventListener('click', () => {
-    localStorage.removeItem('userName');
-    if (loginBtn) loginBtn.classList.remove('hidden');
-    if (userMenu) userMenu.classList.add('hidden');
-    if (dropdownMenu) dropdownMenu.classList.add('hidden');
-    showToast('Logged out', 'info');
+  logoutBtn.addEventListener('click', async () => {
+    try {
+      const response = await fetch('/logout', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.ok) {
+        localStorage.removeItem('userName');
+        showToast('Logged out', 'info');
+        // Redirect to auth page after a short delay
+        setTimeout(() => {
+          window.location.href = '/auth';
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      showToast('Logout failed', 'error');
+    }
   });
 }
 

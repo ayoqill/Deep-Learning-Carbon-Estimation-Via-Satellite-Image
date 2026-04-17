@@ -9,3 +9,5 @@ opencv-python>=4.7.0
 geopandas>=0.12.0
 tqdm>=4.62.3
 segmentation-models-pytorch>=0.3.3
+flask-login>=0.6.2
+werkzeug>=2.3.0

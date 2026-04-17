@@ -6,7 +6,9 @@
 # 4) Save pred_mask.png + overlay.png + step5_results.json via utils.io
 # 5) Return JSON mapped to frontend
 
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for, session, Response, make_response
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
 from pathlib import Path
 from datetime import datetime
 import logging
@@ -39,6 +41,41 @@ app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 200 * 1024 * 1024
 app.config["UPLOAD_FOLDER"] = project_root / "uploads"
 app.config["UPLOAD_FOLDER"].mkdir(parents=True, exist_ok=True)
+app.config["SECRET_KEY"] = "mangrove-carbon-detection-secret-2024"
+app.config["PERMANENT_SESSION_LIFETIME"] = 86400 * 7  # 7 days
+app.config["SESSION_COOKIE_SECURE"] = False  # Set to True in production with HTTPS
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
+# Flask-Login setup
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "auth"
+
+# In-memory user storage (in production, use a database)
+users_db = {}
+
+
+# User class for Flask-Login
+class User(UserMixin):
+    def __init__(self, username):
+        self.id = username
+        self.username = username
+
+
+@login_manager.user_loader
+def load_user(username):
+    if username in users_db:
+        return User(username)
+    return None
+
+
+@app.before_request
+def before_request():
+    """Refresh user session to keep it alive"""
+    session.permanent = True
+    app.permanent_session_lifetime = app.config["PERMANENT_SESSION_LIFETIME"]
+
 
 RESULTS_DIR = project_root / "results"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -257,13 +294,108 @@ def step5_calculate(mask01: np.ndarray, pixel_size_m: float, carbon_density_ton_
 # -----------------------------
 # Routes
 # -----------------------------
+@app.route("/login", methods=["POST"])
+def login():
+    """Handle user login"""
+    data = request.get_json()
+    username = data.get("username", "").strip()
+    password = data.get("password", "").strip()
+
+    if not username or not password:
+        return jsonify({"success": False, "error": "Username and password are required"}), 400
+
+    if username not in users_db:
+        return jsonify({"success": False, "error": "User not found"}), 401
+
+    stored_hash = users_db[username]
+    if not check_password_hash(stored_hash, password):
+        return jsonify({"success": False, "error": "Invalid password"}), 401
+
+    user = User(username)
+    session.permanent = True
+    login_user(user, remember=True, force=True)
+    session.modified = True
+    logger.info(f"User '{username}' logged in successfully")
+    
+    response = make_response(jsonify({"success": True, "username": username}))
+    return response
+
+
+@app.route("/signup", methods=["POST"])
+def signup():
+    """Handle user signup"""
+    data = request.get_json()
+    username = data.get("username", "").strip()
+    password = data.get("password", "").strip()
+    confirm_password = data.get("confirm_password", "").strip()
+
+    if not username or not password or not confirm_password:
+        return jsonify({"success": False, "error": "All fields are required"}), 400
+
+    if len(username) < 3:
+        return jsonify({"success": False, "error": "Username must be at least 3 characters"}), 400
+
+    if len(password) < 6:
+        return jsonify({"success": False, "error": "Password must be at least 6 characters"}), 400
+
+    if password != confirm_password:
+        return jsonify({"success": False, "error": "Passwords do not match"}), 400
+
+    if username in users_db:
+        return jsonify({"success": False, "error": "Username already exists"}), 409
+
+    # Store hashed password
+    password_hash = generate_password_hash(password)
+    users_db[username] = password_hash
+    
+    # Auto-login after signup
+    user = User(username)
+    session.permanent = True
+    login_user(user, remember=True, force=True)
+    session.modified = True
+    logger.info(f"New user '{username}' signed up and logged in")
+    response = make_response(jsonify({"success": True, "username": username}))
+    return response
+
+
+@app.route("/logout", methods=["POST"])
+def logout():
+    """Handle user logout"""
+    if current_user.is_authenticated:
+        username = current_user.username
+        logout_user()
+        logger.info(f"User '{username}' logged out")
+    return jsonify({"success": True})
+
+
+@app.route("/auth_status", methods=["GET"])
+def auth_status():
+    """Get current authentication status"""
+    return jsonify({
+        "authenticated": current_user.is_authenticated,
+        "username": current_user.username if current_user.is_authenticated else None
+    })
+
+
+@app.route("/auth")
+def auth():
+    """Authentication page (login/signup)"""
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    return render_template("auth.html")
+
+
 @app.route("/")
 def index():
+    if not current_user.is_authenticated:
+        return redirect(url_for('auth'))
     return render_template("index.html")
 
 
 @app.route("/insight")
 def insight():
+    if not current_user.is_authenticated:
+        return redirect(url_for('auth'))
     return render_template("insight.html")
 
 
@@ -289,6 +421,9 @@ def status():
 
 @app.route("/upload", methods=["POST"])
 def upload():
+    if not current_user.is_authenticated:
+        return jsonify({"success": False, "error": "Not authenticated"}), 401
+    
     model_choice = request.form.get("model", "unetpp")  # default to unetpp
     
     if not load_model(model_choice):
