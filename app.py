@@ -28,6 +28,8 @@ from src.utils.io import (
     save_overlay_png,
     save_json,
 )
+from src.utils.analytics import AnalyticsManager
+from src.utils.study_areas import StudyAreaManager
 
 # -----------------------------
 # Basic config
@@ -79,6 +81,17 @@ def before_request():
 
 RESULTS_DIR = project_root / "results"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+# Analytics manager
+analytics_manager = AnalyticsManager(RESULTS_DIR)
+
+# Study areas manager
+study_areas_manager = StudyAreaManager(
+    study_areas_data_path=project_root / "TEST IMAGES",
+    results_path=RESULTS_DIR,
+    models={},  # Will be populated with loaded models
+    device="mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu")
+)
 
 # Define multiple models
 MODEL_PATHS = {
@@ -385,6 +398,14 @@ def auth():
     return render_template("auth.html")
 
 
+@app.route("/analytics")
+def analytics():
+    """Analytics page for result history and study areas"""
+    if not current_user.is_authenticated:
+        return redirect(url_for('auth'))
+    return render_template("analytics.html")
+
+
 @app.route("/")
 def index():
     if not current_user.is_authenticated:
@@ -519,6 +540,9 @@ def upload():
                 "Use GeoTIFF for best results."
             )
 
+        # Save to analytics DB
+        save_analysis_result(upload_name, timestamp, results, model_choice)
+
         return jsonify(response)
 
     except Exception as e:
@@ -526,7 +550,117 @@ def upload():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
-# -----------------------------
+# ============================
+# Analytics API Routes
+# ============================
+@app.route("/api/analyses", methods=["GET"])
+def get_analyses():
+    """Get all analysis records"""
+    if not current_user.is_authenticated:
+        return jsonify({"success": False, "error": "Not authenticated"}), 401
+    
+    try:
+        analyses = analytics_manager.get_all_analyses()
+        return jsonify({"success": True, "data": analyses})
+    except Exception as e:
+        logger.exception("Failed to get analyses")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/analyses/<analysis_id>", methods=["GET"])
+def get_analysis(analysis_id):
+    """Get a specific analysis"""
+    if not current_user.is_authenticated:
+        return jsonify({"success": False, "error": "Not authenticated"}), 401
+    
+    try:
+        analysis = analytics_manager.get_analysis(analysis_id)
+        if not analysis:
+            return jsonify({"success": False, "error": "Analysis not found"}), 404
+        return jsonify({"success": True, "data": analysis})
+    except Exception as e:
+        logger.exception("Failed to get analysis")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/analyses/type/<analysis_type>", methods=["GET"])
+def get_analyses_by_type(analysis_type):
+    """Get analyses by type (uploaded/precomputed)"""
+    if not current_user.is_authenticated:
+        return jsonify({"success": False, "error": "Not authenticated"}), 401
+    
+    if analysis_type not in ["uploaded", "precomputed"]:
+        return jsonify({"success": False, "error": "Invalid analysis type"}), 400
+    
+    try:
+        analyses = analytics_manager.get_by_type(analysis_type)
+        return jsonify({"success": True, "data": analyses})
+    except Exception as e:
+        logger.exception("Failed to get analyses by type")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/study-areas", methods=["GET"])
+def get_study_areas():
+    """Get all study areas"""
+    if not current_user.is_authenticated:
+        return jsonify({"success": False, "error": "Not authenticated"}), 401
+    
+    try:
+        areas = study_areas_manager.get_study_areas()
+        return jsonify({"success": True, "data": areas})
+    except Exception as e:
+        logger.exception("Failed to get study areas")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/study-areas/<study_area_id>", methods=["GET"])
+def get_study_area(study_area_id):
+    """Get a specific study area"""
+    if not current_user.is_authenticated:
+        return jsonify({"success": False, "error": "Not authenticated"}), 401
+    
+    try:
+        area = study_areas_manager.get_study_area(study_area_id)
+        if not area:
+            return jsonify({"success": False, "error": "Study area not found"}), 404
+        return jsonify({"success": True, "data": area})
+    except Exception as e:
+        logger.exception("Failed to get study area")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ============================
+# Helper: Save analysis to analytics DB after upload
+# ============================
+def save_analysis_result(upload_name, timestamp, results, model_choice):
+    """
+    Save analysis result to analytics manager after successful upload.
+    """
+    try:
+        analysis = {
+            "type": "uploaded",
+            "title": upload_name.replace(f"upload_{timestamp}_", ""),
+            "location": "",
+            "originalImagePath": f"/uploads/{upload_name}",
+            "resultImagePath": f"/results/run_{timestamp}/overlay.png",
+            "maskPath": f"/results/run_{timestamp}/pred_mask.png",
+            "model": model_choice,
+            "mangroveCoverage": round(results["coverage_percent"], 2),
+            "totalAreaHectares": round(results["area_ha"], 4),
+            "totalAreaM2": round(results["area_m2"], 2),
+            "carbonStock": round(results["carbon_tons"], 2),
+            "co2Equivalent": round(results["co2_tons"], 2),
+            "pixelSizeM": results["pixel_size_m"],
+        }
+        analytics_manager.save_analysis(analysis)
+        logger.info(f"Analysis saved to analytics DB: {analysis['title']}")
+    except Exception as e:
+        logger.error(f"Failed to save analysis to analytics DB: {e}")
+
+
+# Update the /upload route to save analysis
+# We need to modify the response section-------------------------
 # Run
 # -----------------------------
 if __name__ == "__main__":
