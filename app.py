@@ -500,7 +500,7 @@ def upload():
         prob_map = predict_mask_tiled(model_img, model_choice)
         
         # Apply threshold to convert to binary mask
-        DETECTION_THRESHOLD = 0.01
+        DETECTION_THRESHOLD = 0.001
         mask01 = (prob_map >= DETECTION_THRESHOLD).astype(np.uint8)
 
         # run folder + standard paths via utils/io.py
@@ -540,8 +540,8 @@ def upload():
                 "Use GeoTIFF for best results."
             )
 
-        # Save to analytics DB
-        save_analysis_result(upload_name, timestamp, results, model_choice)
+        # Save to analytics DB (user-specific)
+        save_analysis_result(upload_name, timestamp, results, model_choice, username=current_user.username)
 
         return jsonify(response)
 
@@ -555,13 +555,19 @@ def upload():
 # ============================
 @app.route("/api/analyses", methods=["GET"])
 def get_analyses():
-    """Get all analysis records"""
+    """Get all analysis records for current user (uploaded) and all precomputed"""
     if not current_user.is_authenticated:
         return jsonify({"success": False, "error": "Not authenticated"}), 401
     
     try:
-        analyses = analytics_manager.get_all_analyses()
-        return jsonify({"success": True, "data": analyses})
+        # Get user's uploaded analyses
+        uploaded = analytics_manager.get_by_type("uploaded", username=current_user.username)
+        # Get shared precomputed analyses
+        precomputed = analytics_manager.get_by_type("precomputed")
+        # Combine and sort
+        all_analyses = uploaded + precomputed
+        all_analyses.sort(key=lambda x: x.get('createdAt', ''), reverse=True)
+        return jsonify({"success": True, "data": all_analyses})
     except Exception as e:
         logger.exception("Failed to get analyses")
         return jsonify({"success": False, "error": str(e)}), 500
@@ -569,12 +575,17 @@ def get_analyses():
 
 @app.route("/api/analyses/<analysis_id>", methods=["GET"])
 def get_analysis(analysis_id):
-    """Get a specific analysis"""
+    """Get a specific analysis (must belong to current user or be precomputed)"""
     if not current_user.is_authenticated:
         return jsonify({"success": False, "error": "Not authenticated"}), 401
     
     try:
-        analysis = analytics_manager.get_analysis(analysis_id)
+        # Check user's uploaded analyses first
+        analysis = analytics_manager.get_analysis(analysis_id, username=current_user.username)
+        # If not found, check precomputed
+        if not analysis:
+            analysis = analytics_manager.get_analysis(analysis_id)
+        
         if not analysis:
             return jsonify({"success": False, "error": "Analysis not found"}), 404
         return jsonify({"success": True, "data": analysis})
@@ -593,7 +604,12 @@ def get_analyses_by_type(analysis_type):
         return jsonify({"success": False, "error": "Invalid analysis type"}), 400
     
     try:
-        analyses = analytics_manager.get_by_type(analysis_type)
+        if analysis_type == "uploaded":
+            # Get only current user's uploaded analyses
+            analyses = analytics_manager.get_by_type(analysis_type, username=current_user.username)
+        else:
+            # Get shared precomputed analyses
+            analyses = analytics_manager.get_by_type(analysis_type)
         return jsonify({"success": True, "data": analyses})
     except Exception as e:
         logger.exception("Failed to get analyses by type")
@@ -633,9 +649,16 @@ def get_study_area(study_area_id):
 # ============================
 # Helper: Save analysis to analytics DB after upload
 # ============================
-def save_analysis_result(upload_name, timestamp, results, model_choice):
+def save_analysis_result(upload_name, timestamp, results, model_choice, username=None):
     """
     Save analysis result to analytics manager after successful upload.
+    
+    Args:
+        upload_name: Name of the uploaded file
+        timestamp: Timestamp of upload
+        results: Results dict from step5_calculate
+        model_choice: Model used ("unetpp" or "deeplabv3")
+        username: Username of the uploader
     """
     try:
         analysis = {
@@ -653,8 +676,8 @@ def save_analysis_result(upload_name, timestamp, results, model_choice):
             "co2Equivalent": round(results["co2_tons"], 2),
             "pixelSizeM": results["pixel_size_m"],
         }
-        analytics_manager.save_analysis(analysis)
-        logger.info(f"Analysis saved to analytics DB: {analysis['title']}")
+        analytics_manager.save_analysis(analysis, username=username)
+        logger.info(f"Analysis saved to analytics DB for user '{username}': {analysis['title']}")
     except Exception as e:
         logger.error(f"Failed to save analysis to analytics DB: {e}")
 
