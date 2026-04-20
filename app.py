@@ -445,7 +445,7 @@ def upload():
     if not current_user.is_authenticated:
         return jsonify({"success": False, "error": "Not authenticated"}), 401
     
-    model_choice = request.form.get("model", "unetpp")  # default to unetpp
+    model_choice = request.form.get("model", "deeplabv3")  # default to deeplabv3 (superior for segmentation)
     
     if not load_model(model_choice):
         return jsonify({"success": False, "error": f"Model {model_choice} failed to load"}), 500
@@ -698,8 +698,8 @@ if __name__ == "__main__":
     logger.info("Starting Mangrove Carbon Web App")
     logger.info("=" * 60)
 
-    # Preload default model (optional)
-    load_model("unetpp")
+    # Preload default model (DeepLabV3+ - superior for segmentation)
+    load_model("deeplabv3")
     
     logger.info("✅ Open: http://localhost:5000")
 
