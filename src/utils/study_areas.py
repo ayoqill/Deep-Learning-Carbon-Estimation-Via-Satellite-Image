@@ -64,7 +64,7 @@ class StudyAreaManager:
         images = [f for f in image_folder.glob('*') if f.suffix.lower() in valid_extensions]
         return sorted(images)
     
-    def initialize_langkawi(self, test_images_path: Path, model_name: str = "unetpp") -> bool:
+    def initialize_langkawi(self, test_images_path: Path, model_name: str = "Deeplabv3+") -> bool:
         """
         Initialize Langkawi study area with images from TEST IMAGES folder.
         Auto-processes all images found there.
