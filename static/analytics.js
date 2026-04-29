@@ -186,6 +186,31 @@ async function loadAnalyses() {
   }
 }
 
+async function deleteUploadedAnalysis(analysisId, analysisTitle) {
+  const confirmed = confirm(`Delete "${analysisTitle}" from your analysis history?`);
+  if (!confirmed) return;
+
+  try {
+    const response = await fetch(`/api/analyses/${analysisId}`, {
+      method: 'DELETE'
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      showToast(result.error || result.message || 'Failed to delete analysis', 'error');
+      return;
+    }
+
+    allAnalyses = allAnalyses.filter(a => String(a.id) !== String(analysisId));
+    renderAnalyses();
+    showToast('Analysis deleted successfully', 'success');
+  } catch (error) {
+    console.error('Delete analysis error:', error);
+    showToast('Error deleting analysis', 'error');
+  }
+}
+
 function renderAnalyses() {
   let analyses = allAnalyses.filter(a => a.type === 'uploaded');
 
@@ -204,13 +229,23 @@ function renderAnalyses() {
   uploadedEmpty?.classList.add('hidden');
 
   uploadedList.innerHTML = analyses.map(analysis => `
-    <div class="bg-gradient-to-br from-white to-gray-50 rounded-xl border border-gray-200 overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group" onclick="viewAnalysisDetail('${analysis.id}')">
+    <div class="bg-gradient-to-br from-white to-gray-50 rounded-xl border border-gray-200 overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group relative" onclick="viewAnalysisDetail('${analysis.id}')">
+      
+      <!-- Delete Button -->
+      <button
+        type="button"
+        class="absolute top-3 right-3 z-10 bg-white/90 hover:bg-red-50 text-red-600 border border-gray-200 hover:border-red-200 rounded-lg px-3 py-1.5 text-xs font-semibold shadow-sm transition"
+        onclick="event.stopPropagation(); deleteUploadedAnalysis('${analysis.id}', '${safeText(analysis.title)}')"
+      >
+        Delete
+      </button>
+
       <div class="h-48 bg-gray-200 overflow-hidden">
-        <img src="${analysis.resultImagePath}" alt="${escapeHtml(analysis.title)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+        <img src="${analysis.resultImagePath}" alt="${analysis.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
       </div>
 
       <div class="p-4">
-        <h3 class="font-semibold text-gray-800 truncate mb-2">${escapeHtml(analysis.title)}</h3>
+        <h3 class="font-semibold text-gray-800 truncate mb-2">${safeText(analysis.title)}</h3>
 
         <div class="space-y-2 text-sm mb-4">
           <div class="flex justify-between">
@@ -229,7 +264,7 @@ function renderAnalyses() {
 
         <div class="border-t border-gray-200 pt-3 flex justify-between items-center">
           <span class="text-xs text-gray-500">${formatDate(analysis.createdAt)}</span>
-          <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">${escapeHtml(analysis.model || 'Unknown')}</span>
+          <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">${safeText(analysis.model || 'Unknown')}</span>
         </div>
       </div>
     </div>

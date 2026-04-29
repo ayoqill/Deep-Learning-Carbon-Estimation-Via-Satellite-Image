@@ -593,6 +593,29 @@ def get_analysis(analysis_id):
         logger.exception("Failed to get analysis")
         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route("/api/analyses/<analysis_id>", methods=["DELETE"])
+def delete_analysis_api(analysis_id):
+    """Delete one uploaded analysis belonging to the current user"""
+    if not current_user.is_authenticated:
+        return jsonify({"success": False, "error": "Not authenticated"}), 401
+
+    try:
+        success = analytics_manager.delete_analysis(
+            analysis_id,
+            username=current_user.username
+        )
+
+        if not success:
+            return jsonify({"success": False, "error": "Analysis not found"}), 404
+
+        return jsonify({
+            "success": True,
+            "message": "Analysis deleted successfully"
+        })
+    except Exception as e:
+        logger.exception("Failed to delete analysis")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 
 @app.route("/api/analyses/type/<analysis_type>", methods=["GET"])
 def get_analyses_by_type(analysis_type):
