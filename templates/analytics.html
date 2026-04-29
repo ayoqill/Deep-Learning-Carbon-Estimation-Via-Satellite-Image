@@ -156,7 +156,10 @@
             <h2 class="text-2xl font-bold text-gray-800">🔬 Precomputed Langkawi Analysis</h2>
 
             <div class="flex flex-wrap items-center gap-3">
-              <span id="showcaseStatusBadge" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
+              <span
+                id="showcaseStatusBadge"
+                class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800"
+              >
                 Showcase Only
               </span>
 
@@ -165,38 +168,20 @@
                 id="showcaseSampleSelect"
                 class="px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-blue-500 outline-none"
               >
-                <option value="">Loading...</option>
               </select>
             </div>
           </div>
 
-          <!-- Overview Bar -->
-          <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-            <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
-              <p class="text-xs uppercase tracking-wide text-gray-500 mb-1">Area</p>
-              <p id="overviewArea" class="text-base font-semibold text-gray-800">Langkawi, Kedah</p>
-            </div>
-
-            <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
-              <p class="text-xs uppercase tracking-wide text-gray-500 mb-1">Model</p>
-              <p id="overviewModel" class="text-base font-semibold text-gray-800">DeepLabV3+</p>
-            </div>
-
-            <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
-              <p class="text-xs uppercase tracking-wide text-gray-500 mb-1">Samples</p>
-              <p id="overviewSamples" class="text-base font-semibold text-gray-800">1</p>
-            </div>
-
-            <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
-              <p class="text-xs uppercase tracking-wide text-gray-500 mb-1">Status</p>
-              <p id="overviewStatus" class="text-base font-semibold text-gray-800">Showcase Only</p>
-            </div>
-
-            <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
-              <p class="text-xs uppercase tracking-wide text-gray-500 mb-1">Updated</p>
-              <p id="overviewUpdated" class="text-base font-semibold text-gray-800">-</p>
-            </div>
+          <!-- Only ONE main showcase panel -->
+          <div id="langkawiList">
+            <!-- JS will inject the showcase dashboard here -->
           </div>
+
+          <!-- Empty State -->
+          <div id="langkawiEmpty" class="hidden text-center py-12 text-gray-500">
+            <p class="text-lg">No precomputed showcase available.</p>
+          </div>
+        </div>
 
           <!-- Main Dashboard -->
           <div id="langkawiList">
@@ -208,3 +193,93 @@
             <p class="text-lg">No precomputed showcase available.</p>
           </div>
         </div>
+                </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail Modal -->
+  <div id="detailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <!-- Modal Header -->
+      <div class="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-center">
+        <div>
+          <h2 id="modalTitle" class="text-2xl font-bold text-gray-800">Analysis Details</h2>
+          <p id="modalSubtitle" class="text-sm text-gray-600 mt-1"></p>
+        </div>
+        <button id="closeModal" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Modal Content -->
+      <div class="p-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <!-- Images Section -->
+          <div>
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Before Image</h3>
+            <img id="modalOriginalImage" src="" alt="Original Image" class="w-full rounded-lg border border-gray-200 mb-6">
+
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">After Detection</h3>
+            <img id="modalResultImage" src="" alt="Result Image" class="w-full rounded-lg border border-gray-200">
+          </div>
+
+          <!-- Statistics Section -->
+          <div>
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">📊 Statistics</h3>
+
+            <div class="space-y-3">
+              <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <span class="text-gray-700 font-medium">Mangrove Coverage:</span>
+                <span id="statCoverage" class="font-semibold text-gray-800">-</span>
+              </div>
+
+              <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <span class="text-gray-700 font-medium">Total Area (Hectares):</span>
+                <span id="statAreaHa" class="font-semibold text-gray-800">-</span>
+              </div>
+
+              <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <span class="text-gray-700 font-medium">Total Area (m²):</span>
+                <span id="statAreaM2" class="font-semibold text-gray-800">-</span>
+              </div>
+
+              <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <span class="text-gray-700 font-medium">Carbon Stock (tons):</span>
+                <span id="statCarbon" class="font-semibold text-gray-800">-</span>
+              </div>
+
+              <div class="flex justify-between items-center p-3 bg-gray-800 rounded-lg">
+                <span class="text-white font-medium">CO₂ Equivalent (tons):</span>
+                <span id="statCO2" class="font-semibold text-white">-</span>
+              </div>
+
+              <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200 mt-6">
+                <span class="text-gray-700 font-medium">Model Used:</span>
+                <span id="statModel" class="font-semibold text-gray-800">-</span>
+              </div>
+
+              <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <span class="text-gray-700 font-medium">Pixel Size (m):</span>
+                <span id="statPixelSize" class="font-semibold text-gray-800">-</span>
+              </div>
+
+              <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <span class="text-gray-700 font-medium">Analysis Date:</span>
+                <span id="statDate" class="font-semibold text-gray-800">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed top-6 left-1/2 transform -translate-x-1/2 -translate-y-20 opacity-0 px-6 py-4 bg-green-500 text-white font-semibold rounded-xl shadow-2xl transition-all duration-300 z-50 max-w-md text-center"></div>
+
+  <script src="/static/analytics.js"></script>
+</body>
+</html>
