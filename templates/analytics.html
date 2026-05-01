@@ -219,8 +219,10 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <!-- Images Section -->
           <div>
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">Before Image</h3>
-            <img id="modalOriginalImage" src="" alt="Original Image" class="w-full rounded-lg border border-gray-200 mb-6">
+            <div id="beforeImageBlock" class="hidden">
+              <h3 class="text-lg font-semibold text-gray-800 mb-4">Before Image</h3>
+              <img id="modalOriginalImage" src="" alt="Original Image" class="w-full rounded-lg border border-gray-200 mb-6">
+            </div>
 
             <h3 class="text-lg font-semibold text-gray-800 mb-4">After Detection</h3>
             <img id="modalResultImage" src="" alt="Result Image" class="w-full rounded-lg border border-gray-200">

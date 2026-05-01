@@ -53,11 +53,11 @@ function loadPrecomputedAnalyses() {
       originalImagePath: '/static/precomputed/before_mapping/Langkawi1image.png',
       resultImagePath: '/static/precomputed/after_mapping/Langkawi1.png',
 
-      mangroveCoverage: null,
-      totalAreaHectares: null,
-      totalAreaM2: null,
-      carbonStock: null,
-      co2Equivalent: null,
+      mangroveCoverage: 92.5,
+      totalAreaHectares: 147.6005,
+      totalAreaM2: 1476005.46,
+      carbonStock: 22140.08,
+      co2Equivalent: 81254.1,
 
       model: 'DeepLabV3+',
       pixelSizeM: 10,
