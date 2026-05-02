@@ -43,36 +43,96 @@ let currentViewerMode = 'before';
 // ==============================
 // Fixed Precomputed Sample
 // ==============================
-function loadPrecomputedAnalyses() {
-  precomputedAnalyses = [
-    {
-      id: 'precomputed-langkawi-1',
-      type: 'precomputed',
-      title: 'Langkawi Analysis 1',
-      location: 'Langkawi, Kedah, Malaysia',
-      originalImagePath: '/static/precomputed/before_mapping/Langkawi1image.png',
-      resultImagePath: '/static/precomputed/after_mapping/Langkawi1.png',
+precomputedAnalyses = [
+  {
+    id: 'precomputed-langkawi-1',
+    type: 'precomputed',
+    title: 'Langkawi Analysis 1',
+    location: 'Langkawi, Kedah, Malaysia',
+    originalImagePath: '/static/precomputed/before_mapping/Langkawi1before.png',
+    resultImagePath: '/static/precomputed/after_mapping/Langkawi1.png',
 
-      mangroveCoverage: 92.5,
-      totalAreaHectares: 147.6005,
-      totalAreaM2: 1476005.46,
-      carbonStock: 22140.08,
-      co2Equivalent: 81254.1,
+    mangroveCoverage: 92.5,
+    totalAreaHectares: 147.6005,
+    totalAreaM2: 1476005.46,
+    carbonStock: 22140.08,
+    co2Equivalent: 81254.1,
 
-      model: 'DeepLabV3+',
-      pixelSizeM: 10,
-      createdAt: '2026-04-28T10:00:00',
+    model: 'DeepLabV3+',
+    pixelSizeM: 10,
+    createdAt: '2026-04-28T10:00:00',
+    notes: 'This sample is a fixed showcase result from the Langkawi study area for presentation purposes only.',
+    methodology: 'Satellite Image → DeepLabV3+ → Mangrove Mapping → Area & Carbon Estimation'
+  },
 
-      notes: 'This sample is a fixed showcase result from the Langkawi study area for presentation purposes only.',
-      methodology: 'Satellite Image → DeepLabV3+ → Mangrove Mapping → Area & Carbon Estimation'
-    }
-  ];
+  {
+    id: 'precomputed-langkawi-2',
+    type: 'precomputed',
+    title: 'Langkawi Analysis 2',
+    location: 'Langkawi, Kedah, Malaysia',
+    originalImagePath: '/static/precomputed/before_mapping/Langkawi2before.png',
+    resultImagePath: '/static/precomputed/after_mapping/Langkawi2.png',
 
+    mangroveCoverage: 0,
+    totalAreaHectares: 0,
+    totalAreaM2: 0,
+    carbonStock: 0,
+    co2Equivalent: 0,
+
+    model: 'DeepLabV3+',
+    pixelSizeM: 10,
+    createdAt: '2026-04-28T10:00:00',
+    notes: 'This sample is a fixed showcase result from the Langkawi study area for presentation purposes only.',
+    methodology: 'Satellite Image → DeepLabV3+ → Mangrove Mapping → Area & Carbon Estimation'
+  },
+
+  {
+    id: 'precomputed-langkawi-3',
+    type: 'precomputed',
+    title: 'Langkawi Analysis 3',
+    location: 'Langkawi, Kedah, Malaysia',
+    originalImagePath: '/static/precomputed/before_mapping/Langkawi3before.png',
+    resultImagePath: '/static/precomputed/after_mapping/Langkawi3.png',
+
+    mangroveCoverage: 0,
+    totalAreaHectares: 0,
+    totalAreaM2: 0,
+    carbonStock: 0,
+    co2Equivalent: 0,
+
+    model: 'DeepLabV3+',
+    pixelSizeM: 10,
+    createdAt: '2026-04-28T10:00:00',
+    notes: 'This sample is a fixed showcase result from the Langkawi study area for presentation purposes only.',
+    methodology: 'Satellite Image → DeepLabV3+ → Mangrove Mapping → Area & Carbon Estimation'
+  },
+
+  {
+    id: 'precomputed-langkawi-4',
+    type: 'precomputed',
+    title: 'Langkawi Analysis 4',
+    location: 'Langkawi, Kedah, Malaysia',
+    originalImagePath: '/static/precomputed/before_mapping/Langkawi4before.png',
+    resultImagePath: '/static/precomputed/after_mapping/Langkawi4.png',
+
+    mangroveCoverage: 0,
+    totalAreaHectares: 0,
+    totalAreaM2: 0,
+    carbonStock: 0,
+    co2Equivalent: 0,
+
+    model: 'DeepLabV3+',
+    pixelSizeM: 10,
+    createdAt: '2026-04-28T10:00:00',
+    notes: 'This sample is a fixed showcase result from the Langkawi study area for presentation purposes only.',
+    methodology: 'Satellite Image → DeepLabV3+ → Mangrove Mapping → Area & Carbon Estimation'
+  }
+];
+  
   currentShowcase = precomputedAnalyses[0] || null;
   initializeShowcaseControls();
   updateShowcaseOverview();
   renderPrecomputedAnalyses();
-}
 
 // ==============================
 // Toast Notification
