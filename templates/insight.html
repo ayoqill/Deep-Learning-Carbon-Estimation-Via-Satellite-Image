@@ -10,22 +10,80 @@
 </head>
 
 <body class="font-sans grid-bg">
-  <!-- Navigation Bar -->
+   <!-- Navigation Bar -->
   <nav id="mainNavbar" class="fixed top-0 left-0 w-full z-50 bg-white border-b border-gray-200 shadow-md transition-all duration-500 ease-in-out">
     <div class="px-6 py-4">
       <div class="flex items-center justify-between">
+
         <!-- Logo and Brand Name -->
         <div class="flex items-center space-x-3">
           <img src="/static/logo.png" alt="Mangrove Carbon Mapper Logo" class="w-12 h-12 object-contain">
-          <span class="text-xl font-semibold tracking-tight text-gray-800">Mangrove Carbon Mapping</span>
+
+          <span class="text-xl font-semibold tracking-tight text-gray-800">
+            Mangrove Carbon Mapping
+          </span>
+
+          <span class="hidden md:inline-block text-gray-300">|</span>
+
+          <!-- Desktop Links -->
+          <div class="hidden md:flex items-center space-x-4">
+            <a href="/" class="text-sm font-medium text-blue-600 border-b-2 border-blue-600">Upload</a>
+            <a href="/analytics" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Analytics</a>
+            <a href="/insight" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Insight</a>
+          </div>
         </div>
 
-        <!-- Right Link -->
-        <div class="flex items-center">
-          <a href="/" class="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium">Home</a>
+        <!-- Right Side -->
+        <div class="flex items-center relative">
+
+          <!-- Login Button -->
+          <button id="loginBtn" class="text-gray-600 hover:text-gray-900 transition-colors flex items-center space-x-1 text-sm font-medium">
+            <span>Log in</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </button>
+
+          <!-- User Menu -->
+          <div id="userMenu" class="hidden">
+            <button id="userMenuBtn" class="text-gray-800 hover:text-gray-900 transition-colors flex items-center space-x-2 text-sm font-medium">
+              <div class="w-8 h-8 bg-gray-800 text-white rounded-full flex items-center justify-center">
+                <span id="userInitial" class="text-2xl">🧑🏻‍🔬</span>
+              </div>
+              <span id="userName">User</span>
+              <svg class="w-4 h-4 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </button>
+
+            <!-- Dropdown Menu -->
+            <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+              <button id="logoutBtn" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                Logout
+              </button>
+            </div>
+          </div>
+
+          <!-- Mobile Hamburger Button -->
+          <button id="mobileMenuBtn" class="md:hidden ml-3 text-gray-700 hover:text-gray-900">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+          </button>
+
         </div>
       </div>
     </div>
+
+      <!-- Mobile Dropdown Menu -->
+      <div id="mobileMenu" class="hidden md:hidden px-6 pb-4 bg-white border-t border-gray-100">
+        <div class="flex flex-col space-y-3 pt-3">
+          <a href="/" class="text-sm font-medium text-blue-600">Upload</a>
+          <a href="/analytics" class="text-sm font-medium text-gray-600 hover:text-gray-900">Analytics</a>
+          <a href="/insight" class="text-sm font-medium text-gray-600 hover:text-gray-900">Insight</a>
+        </div>
+      </div>
   </nav>
 
   <!-- Main Content -->
@@ -83,5 +141,8 @@
       </div>
     </div>
   </div>
+
+  <script src="/static/script.js"></script>
+
 </body>
 </html>
