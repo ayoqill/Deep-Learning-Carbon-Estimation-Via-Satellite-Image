@@ -1,7 +1,5 @@
 /* =========================================================
    Tailwind-matched custom CSS (FULL REPLACEMENT)
-   - Keep what Tailwind doesn't cover (grid bg, dragover,
-     per-letter animations, bbox item, small tweaks)
    ========================================================= */
 
 * {
@@ -19,25 +17,22 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ---------- Background grid (body has class="grid-bg") ---------- */
+/* ---------- Background grid ---------- */
 body.grid-bg {
   background-color: #f9fafb;
   background-image:
     linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px);
   background-size: 32px 32px;
-
-  /* only animate background position (not layout) */
   background-position: 0 0;
   transition: background-position 0.5s cubic-bezier(.4,0,.2,1);
 }
 
-/* Subtle shift on hover (optional) */
 body.grid-bg:hover {
   background-position: 16px 16px;
 }
 
-/* ---------- Upload box smooth behavior ---------- */
+/* ---------- Upload box ---------- */
 #uploadBox {
   transition:
     border-color 220ms ease,
@@ -47,18 +42,17 @@ body.grid-bg:hover {
   will-change: transform;
 }
 
-/* Dragover effect (JS toggles .dragover on #uploadBox) */
 #uploadBox.dragover {
-  border-color: rgb(59 130 246);         /* blue-500 */
-  background-color: rgb(239 246 255);    /* blue-50 */
+  border-color: rgb(59 130 246);
+  background-color: rgb(239 246 255);
   box-shadow: 0 20px 45px rgba(0,0,0,0.08);
   transform: translateY(-2px);
 }
 
-/* ---------- Animated step text (your .text-animation spans) ---------- */
+/* ---------- Animated step text ---------- */
 @keyframes move-out {
-  0%   { transform: translateY(0); }
-  50%  { transform: translateY(-10px); }
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
   100% { transform: translateY(0); }
 }
 
@@ -67,22 +61,19 @@ body.grid-bg:hover {
   transform: translateY(0);
 }
 
-/* IMPORTANT: avoid infinite animation (CPU heavy).
-   Run 1–2 loops only when hover */
 .group:hover .text-animation span {
   animation: move-out 0.6s ease-in-out 2;
 }
 
-/* Stagger delays (you use per-letter spans) */
-.group:hover .text-animation span:nth-child(1)  { animation-delay: 0s; }
-.group:hover .text-animation span:nth-child(2)  { animation-delay: 0.05s; }
-.group:hover .text-animation span:nth-child(3)  { animation-delay: 0.1s; }
-.group:hover .text-animation span:nth-child(4)  { animation-delay: 0.15s; }
-.group:hover .text-animation span:nth-child(5)  { animation-delay: 0.2s; }
-.group:hover .text-animation span:nth-child(6)  { animation-delay: 0.25s; }
-.group:hover .text-animation span:nth-child(7)  { animation-delay: 0.3s; }
-.group:hover .text-animation span:nth-child(8)  { animation-delay: 0.35s; }
-.group:hover .text-animation span:nth-child(9)  { animation-delay: 0.4s; }
+.group:hover .text-animation span:nth-child(1) { animation-delay: 0s; }
+.group:hover .text-animation span:nth-child(2) { animation-delay: 0.05s; }
+.group:hover .text-animation span:nth-child(3) { animation-delay: 0.1s; }
+.group:hover .text-animation span:nth-child(4) { animation-delay: 0.15s; }
+.group:hover .text-animation span:nth-child(5) { animation-delay: 0.2s; }
+.group:hover .text-animation span:nth-child(6) { animation-delay: 0.25s; }
+.group:hover .text-animation span:nth-child(7) { animation-delay: 0.3s; }
+.group:hover .text-animation span:nth-child(8) { animation-delay: 0.35s; }
+.group:hover .text-animation span:nth-child(9) { animation-delay: 0.4s; }
 .group:hover .text-animation span:nth-child(10) { animation-delay: 0.45s; }
 .group:hover .text-animation span:nth-child(11) { animation-delay: 0.5s; }
 .group:hover .text-animation span:nth-child(12) { animation-delay: 0.55s; }
@@ -91,7 +82,7 @@ body.grid-bg:hover {
 .group:hover .text-animation span:nth-child(15) { animation-delay: 0.7s; }
 .group:hover .text-animation span:nth-child(16) { animation-delay: 0.75s; }
 
-/* ---------- Result image polish ---------- */
+/* ---------- Result image ---------- */
 #resultImage {
   max-width: 100%;
   height: auto;
@@ -104,39 +95,39 @@ body.grid-bg:hover {
   box-shadow: 0 18px 30px rgba(0,0,0,0.08);
 }
 
-/* ---------- bbox list item (kept even if section hidden) ---------- */
+/* ---------- bbox list item ---------- */
 .bbox-item {
-  background: rgb(243 244 246); /* gray-100 */
-  border: 1px solid rgb(229 231 235); /* gray-200 */
-  border-left: 4px solid rgb(59 130 246); /* blue-500 */
+  background: rgb(243 244 246);
+  border: 1px solid rgb(229 231 235);
+  border-left: 4px solid rgb(59 130 246);
   border-radius: 10px;
   padding: 10px 12px;
   font-size: 0.95rem;
-  color: rgb(31 41 55); /* gray-800 */
+  color: rgb(31 41 55);
   line-height: 1.35;
 }
 
 .bbox-item strong {
-  color: rgb(17 24 39); /* gray-900 */
+  color: rgb(17 24 39);
 }
 
 .bbox-item span {
-  color: rgb(55 65 81); /* gray-700 */
+  color: rgb(55 65 81);
 }
 
-/* ---------- Toast smoothness ---------- */
+/* ---------- Toast ---------- */
 #toast {
   will-change: transform, opacity;
 }
 
-/* ---------- Modern focus outlines ---------- */
+/* ---------- Focus outlines ---------- */
 button:focus-visible,
 input:focus-visible {
-  outline: 2px solid rgba(59,130,246,0.6); /* blue ring */
+  outline: 2px solid rgba(59,130,246,0.6);
   outline-offset: 2px;
 }
 
-/* ---------- Optional: nicer scrollbar ---------- */
+/* ---------- Scrollbar ---------- */
 *::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -152,9 +143,60 @@ input:focus-visible {
   background: rgba(0,0,0,0.04);
 }
 
-/* ---------- Mobile spacing tweaks ---------- */
+/* ---------- Mobile navbar + layout fixes ---------- */
+#mobileMenu {
+  transition: all 0.25s ease;
+}
+
 @media (max-width: 640px) {
   body {
     padding: 0;
+  }
+
+  #mainNavbar .px-6 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  #mainNavbar img {
+    width: 42px;
+    height: 42px;
+  }
+
+  #mainNavbar span.text-xl {
+    font-size: 0.95rem;
+    line-height: 1.2;
+    max-width: 150px;
+  }
+
+  #loginBtn span {
+    display: none;
+  }
+
+  #userName {
+    display: none;
+  }
+
+  #mobileMenu a {
+    padding: 12px 0;
+    border-bottom: 1px solid #eee;
+  }
+
+  #mobileMenu a:last-child {
+    border-bottom: none;
+  }
+
+  #toast {
+    width: calc(100% - 2rem);
+    max-width: none;
+    font-size: 0.9rem;
+  }
+
+  #uploadBox {
+    padding: 2rem 1.25rem !important;
+  }
+
+  #resultImage:hover {
+    transform: none;
   }
 }
