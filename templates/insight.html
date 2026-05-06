@@ -27,9 +27,9 @@
 
           <!-- Desktop Links -->
           <div class="hidden md:flex items-center space-x-4">
-            <a href="/" class="text-sm font-medium text-blue-600 border-b-2 border-blue-600">Upload</a>
-            <a href="/analytics" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Analytics</a>
-            <a href="/insight" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Insight</a>
+            <a href="/" data-nav="upload" class="nav-link text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Upload</a>
+            <a href="/analytics" data-nav="analytics" class="nav-link text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Analytics</a>
+            <a href="/insight" data-nav="insight" class="nav-link text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Insight</a>
           </div>
         </div>
 
@@ -37,7 +37,7 @@
         <div class="flex items-center relative">
 
           <!-- Login Button -->
-          <button id="loginBtn" class="text-gray-600 hover:text-gray-900 transition-colors flex items-center space-x-1 text-sm font-medium">
+          <button id="loginBtn" class="hidden text-gray-600 hover:text-gray-900 transition-colors flex items-center space-x-1 text-sm font-medium">
             <span>Log in</span>
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
@@ -79,9 +79,9 @@
       <!-- Mobile Dropdown Menu -->
       <div id="mobileMenu" class="hidden md:hidden px-6 pb-4 bg-white border-t border-gray-100">
         <div class="flex flex-col space-y-3 pt-3">
-          <a href="/" class="text-sm font-medium text-blue-600">Upload</a>
-          <a href="/analytics" class="text-sm font-medium text-gray-600 hover:text-gray-900">Analytics</a>
-          <a href="/insight" class="text-sm font-medium text-gray-600 hover:text-gray-900">Insight</a>
+          <a href="/" data-nav="upload" class="mobile-nav-link text-sm font-medium text-gray-600">Upload</a>
+          <a href="/analytics" data-nav="analytics" class="mobile-nav-link text-sm font-medium text-gray-600">Analytics</a>
+          <a href="/insight" data-nav="insight" class="mobile-nav-link text-sm font-medium text-gray-600">Insight</a>
         </div>
       </div>
   </nav>

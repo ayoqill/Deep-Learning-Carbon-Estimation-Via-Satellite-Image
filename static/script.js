@@ -30,6 +30,30 @@ const userInitial = document.getElementById('userInitial');
 const mobileMenuBtn = document.getElementById('mobileMenuBtn');
 const mobileMenu = document.getElementById('mobileMenu');
 
+// -------------------------
+// Active navbar link
+// -------------------------
+function setActiveNavbar() {
+  const path = window.location.pathname;
+
+  let activePage = 'upload';
+
+  if (path.includes('/analytics')) activePage = 'analytics';
+  if (path.includes('/insight')) activePage = 'insight';
+
+  document.querySelectorAll('[data-nav]').forEach((link) => {
+    link.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+    link.classList.add('text-gray-600');
+
+    if (link.dataset.nav === activePage) {
+      link.classList.remove('text-gray-600');
+      link.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+    }
+  });
+}
+
+setActiveNavbar();
+
 // Result UI elements
 const resultImage = document.getElementById('resultImage');
 const coveragePercentEl = document.getElementById('coveragePercent');
@@ -283,11 +307,17 @@ window.addEventListener('DOMContentLoaded', async () => {
       if (data.authenticated && data.username) {
         showUserMenu(data.username);
         localStorage.setItem('userName', data.username);
+        return;
       }
     }
 
+    if (loginBtn) loginBtn.classList.remove('hidden');
+    if (userMenu) userMenu.classList.add('hidden');
+
   } catch (error) {
     console.error('Auth status check error:', error);
+    if (loginBtn) loginBtn.classList.remove('hidden');
+    if (userMenu) userMenu.classList.add('hidden');
   }
 });
 
