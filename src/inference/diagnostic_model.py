@@ -16,7 +16,7 @@ import cv2
 from pathlib import Path
 import segmentation_models_pytorch as smp
 
-MODEL_PATH = "models/unetpp_best.pth"
+MODEL_PATH = "models/deeplabv3/deeplabv3_best.pth"
 INPUT_TILE = "data/tiles_clean/STL_Langkawi_Mangrove10_43.tif"
 OUT_DIR = Path("results/prediction_analysis")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -25,7 +25,7 @@ DEVICE = "mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is
 print(f"Using device: {DEVICE}")
 
 # Load
-model = smp.UnetPlusPlus(
+model = smp.DeepLabV3Plus(
     encoder_name="resnet34",
     encoder_weights=None,
     in_channels=4,

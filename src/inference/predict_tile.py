@@ -9,7 +9,7 @@ import segmentation_models_pytorch as smp
 # -------------------------
 # Config
 # -------------------------
-MODEL_PATH   = "models/unetpp_best.pth"
+MODEL_PATH   = "models/deeplabv3/deeplabv3_best.pth"
 INPUT_TILE   = "data/tiles_clean/STL_Langkawi_Mangrove10_43.tif"
 
 OUT_DIR      = Path("results/predict_tile")
@@ -97,7 +97,7 @@ def tif_to_rgb_for_display(img_4band_01):
 # -------------------------
 # Load model (must match training)
 # -------------------------
-model = smp.UnetPlusPlus(
+model = smp.DeepLabV3Plus(
     encoder_name="resnet34",
     encoder_weights=None,
     in_channels=4,

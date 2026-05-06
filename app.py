@@ -13,6 +13,8 @@ from pathlib import Path
 from datetime import datetime
 import logging
 import json
+import os
+import requests
 
 import numpy as np
 import cv2
@@ -93,11 +95,33 @@ study_areas_manager = StudyAreaManager(
     device="mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu")
 )
 
-# Define multiple models
-MODEL_PATHS = {
-    "unetpp": project_root / "models" / "unetpp_best.pth",
-    "deeplabv3": project_root / "models" / "deeplabv3" / "deeplabv3_best.pth"
-}
+# ============================
+# Model Configuration & Download
+# ============================
+MODEL_PATH = os.path.join(
+    os.getcwd(),
+    "models",
+    "deeplabv3",
+    "deeplabv3_best.pth"
+)
+
+MODEL_URL = "https://huggingface.co/aqllaimaa/deeplabv3-mangrove/resolve/main/deeplabv3_best.pth"
+
+if not os.path.exists(MODEL_PATH):
+    os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
+    logger.info("Downloading model from HuggingFace...")
+    
+    try:
+        with requests.get(MODEL_URL, stream=True) as r:
+            r.raise_for_status()
+            with open(MODEL_PATH, "wb") as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+        logger.info("✅ Model downloaded successfully.")
+    except Exception as e:
+        logger.error(f"❌ Failed to download model from HuggingFace: {e}")
+        raise
 
 # Training tile size
 TILE_H, TILE_W = 160, 160
@@ -149,19 +173,19 @@ def _infer_in_channels_from_state_dict(state: dict) -> int:
     return 3
 
 
-def load_model(model_name: str) -> bool:
+def load_model(model_name: str = "deeplabv3") -> bool:
+    """Load DeepLabV3+ model from cache or disk"""
     global loaded_models, model_in_channels
 
     if model_name in loaded_models:
         return True
 
-    model_path = MODEL_PATHS.get(model_name)
-    if not model_path or not model_path.exists():
-        logger.error(f"Model not found: {model_path}")
+    if not os.path.exists(MODEL_PATH):
+        logger.error(f"Model not found: {MODEL_PATH}")
         return False
 
-    logger.info(f"Loading {model_name} from: {model_path}")
-    state = torch.load(str(model_path), map_location=DEVICE)
+    logger.info(f"Loading DeepLabV3+ from: {MODEL_PATH}")
+    state = torch.load(MODEL_PATH, map_location=DEVICE)
 
     # Handle wrapped checkpoints
     if isinstance(state, dict) and "state_dict" in state and isinstance(state["state_dict"], dict):
@@ -175,36 +199,24 @@ def load_model(model_name: str) -> bool:
 
     state = _strip_module_prefix(state)
     channels = _infer_in_channels_from_state_dict(state)
-    model_in_channels[model_name] = channels
-    logger.info(f"Detected {model_name} in_channels: {channels}")
+    model_in_channels["deeplabv3"] = channels
+    logger.info(f"Detected DeepLabV3+ in_channels: {channels}")
 
-    # Initialize correct architecture
-    if model_name == "unetpp":
-        model = smp.UnetPlusPlus(
-            encoder_name=ENCODER_NAME,
-            encoder_weights=ENCODER_WEIGHTS,
-            in_channels=channels,
-            classes=1,
-            activation=None
-        ).to(DEVICE)
-    elif model_name == "deeplabv3":
-        model = smp.DeepLabV3Plus(
-            encoder_name=ENCODER_NAME,
-            encoder_weights=ENCODER_WEIGHTS,
-            in_channels=channels,
-            classes=1,
-            activation=None
-        ).to(DEVICE)
-    else:
-        logger.error(f"Unknown model: {model_name}")
-        return False
+    # Initialize DeepLabV3+ architecture
+    model = smp.DeepLabV3Plus(
+        encoder_name=ENCODER_NAME,
+        encoder_weights=ENCODER_WEIGHTS,
+        in_channels=channels,
+        classes=1,
+        activation=None
+    ).to(DEVICE)
 
     model.load_state_dict(state, strict=True)
     model.eval()
     
-    loaded_models[model_name] = model
+    loaded_models["deeplabv3"] = model
 
-    logger.info(f"✅ {model_name} loaded and ready.")
+    logger.info(f"✅ DeepLabV3+ loaded and ready.")
     return True
 
 
@@ -445,7 +457,7 @@ def upload():
     if not current_user.is_authenticated:
         return jsonify({"success": False, "error": "Not authenticated"}), 401
     
-    model_choice = request.form.get("model", "deeplabv3")  # default to deeplabv3 (superior for segmentation)
+    model_choice = "deeplabv3"  # Force DeepLabV3+ only
     
     if not load_model(model_choice):
         return jsonify({"success": False, "error": f"Model {model_choice} failed to load"}), 500

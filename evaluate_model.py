@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger("model-eval")
 
 project_root = Path(__file__).parent.resolve()
-MODEL_PATH = project_root / "models" / "unetpp_best.pth"
+MODEL_PATH = project_root / "models" / "deeplabv3" / "deeplabv3_best.pth"
 TILES_DIR = project_root / "data" / "tiles_clean"
 MASKS_DIR = project_root / "data" / "masks_refined"
 
@@ -45,7 +45,7 @@ def load_model():
         in_channels = 4
     
     import segmentation_models_pytorch as smp
-    model = smp.UnetPlusPlus(
+    model = smp.DeepLabV3Plus(
         encoder_name="resnet34",
         encoder_weights=None,
         in_channels=in_channels,

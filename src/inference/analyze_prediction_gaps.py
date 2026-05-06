@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 # -------------------------
 # Config
 # -------------------------
-MODEL_PATH = "models/unetpp_best.pth"
+MODEL_PATH = "models/deeplabv3/deeplabv3_best.pth"
 INPUT_TILE = "data/tiles_clean/STL_Langkawi_Mangrove10_43.tif"
 OUT_DIR = Path("results/prediction_analysis")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -108,7 +108,7 @@ def clean_mask_default(mask_255, min_area=120):
 # -------------------------
 # Load model
 # -------------------------
-model = smp.UnetPlusPlus(
+model = smp.DeepLabV3Plus(
     encoder_name="resnet34",
     encoder_weights=None,
     in_channels=4,

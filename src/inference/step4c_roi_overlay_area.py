@@ -18,7 +18,7 @@ BATCH = 64           # lower if memory issue (16/32)
 THRESH = 0.5         # mask threshold
 ALPHA = 0.70         # red overlay strength (0.6–0.8)
 
-MODEL_PATH = Path("models/unetpp_best.pth")
+MODEL_PATH = Path("models/deeplabv3/deeplabv3_best.pth")
 INPUT_TIF  = Path("data/region/TYPESAMPLEHEREEEEEEEE.tif")
 OUT_DIR    = Path("data/outputs")
 
@@ -41,7 +41,7 @@ def build_model_4band():
     # MUST match your training model settings:
     # - encoder_name must match what you used in training
     # - in_channels=4 because RGB+NIR
-    model = smp.UnetPlusPlus(
+    model = smp.DeepLabV3Plus(
         encoder_name="resnet34",   # change if your training used another encoder
         encoder_weights=None,
         in_channels=4,

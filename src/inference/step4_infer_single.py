@@ -10,7 +10,7 @@ import segmentation_models_pytorch as smp
 from src.analytics.step5_area_carbon import calculate_area_and_carbon, get_pixel_size_m
 
 # ====== CONFIG ======
-MODEL_PATH = "models/unetpp_best.pth"
+MODEL_PATH = "models/deeplabv3/deeplabv3_best.pth"
 OUT_DIR = "results"
 
 DEFAULT_PIXEL_SIZE_M = 0.7
@@ -97,7 +97,7 @@ def resize_to_training_size(img01: np.ndarray):
 
 
 def build_model():
-    model = smp.UnetPlusPlus(
+    model = smp.DeepLabV3Plus(
         encoder_name=ENCODER_NAME,
         encoder_weights=ENCODER_WEIGHTS,
         in_channels=IN_CHANNELS,
