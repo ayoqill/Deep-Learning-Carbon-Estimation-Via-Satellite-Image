@@ -729,7 +729,7 @@ def upload():
 
         prob_map = predict_mask_tiled(model_img, model_choice)
 
-        DETECTION_THRESHOLD = 0.001
+        DETECTION_THRESHOLD = 0.01  
         mask01 = (prob_map >= DETECTION_THRESHOLD).astype(np.uint8)
 
         run_dir = create_run_dir(RESULTS_DIR, timestamp)
