@@ -41,6 +41,9 @@ ENV/
 *.pkl
 *.pickle
 
+# Environment variables
+.env
+
 # Data files
 data/raw_images/
 data/masks/

@@ -27,6 +27,10 @@ from datetime import datetime
 import logging
 import os
 import requests
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 import numpy as np
 import torch
