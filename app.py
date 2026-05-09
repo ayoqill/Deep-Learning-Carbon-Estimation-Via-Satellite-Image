@@ -36,6 +36,22 @@ import numpy as np
 import torch
 import segmentation_models_pytorch as smp
 
+# Optional post-processing tools. Add `scikit-image` to requirements.txt for this to work.
+try:
+    from skimage.morphology import (
+        remove_small_objects,
+        remove_small_holes,
+        binary_opening,
+        binary_closing,
+        disk,
+    )
+    SKIMAGE_AVAILABLE = True
+    SKIMAGE_IMPORT_ERROR = None
+except Exception as e:
+    SKIMAGE_AVAILABLE = False
+    SKIMAGE_IMPORT_ERROR = e
+
+
 from src.utils.io import (
     safe_filename,
     load_image_any,
@@ -240,6 +256,19 @@ DEFAULT_PIXEL_SIZE_M = 10.0
 # Carbon density placeholder
 DEFAULT_CARBON_DENSITY_TON_PER_HA = 150.0
 
+# Inference threshold and post-processing settings
+# You can override these in Render Environment Variables without editing code.
+DETECTION_THRESHOLD = float(os.getenv("DETECTION_THRESHOLD", "0.01"))
+POST_PROCESSING_ENABLED = os.getenv("POST_PROCESSING_ENABLED", "true").lower() in ["1", "true", "yes", "on"]
+POST_MIN_OBJECT_SIZE = int(os.getenv("POST_MIN_OBJECT_SIZE", "500"))
+POST_HOLE_AREA_THRESHOLD = int(os.getenv("POST_HOLE_AREA_THRESHOLD", "500"))
+POST_OPENING_RADIUS = int(os.getenv("POST_OPENING_RADIUS", "2"))
+POST_CLOSING_RADIUS = int(os.getenv("POST_CLOSING_RADIUS", "3"))
+
+# Safety check for threshold
+if DETECTION_THRESHOLD < 0 or DETECTION_THRESHOLD > 1:
+    raise ValueError("DETECTION_THRESHOLD must be between 0 and 1")
+
 # Device
 DEVICE = "mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu")
 logger.info(f"Using device: {DEVICE}")
@@ -398,6 +427,52 @@ def predict_mask_tiled(model_img: np.ndarray, model_name: str) -> np.ndarray:
     prob_avg = prob_avg[:H0, :W0]
 
     return prob_avg
+
+
+# -----------------------------
+# Post-processing
+# -----------------------------
+def apply_mask_post_processing(mask01: np.ndarray) -> np.ndarray:
+    """
+    Cleans the binary mask after thresholding.
+
+    Purpose:
+    - Remove small false-positive blobs
+    - Smooth noisy edges
+    - Fill small holes inside mangrove regions
+
+    Input/Output format:
+    - mask01 contains 0 for non-mangrove and 1 for mangrove
+    - returns uint8 mask with 0/1 values
+    """
+    if not POST_PROCESSING_ENABLED:
+        return mask01.astype(np.uint8)
+
+    if not SKIMAGE_AVAILABLE:
+        logger.warning(
+            f"Post-processing skipped because scikit-image is not available: {SKIMAGE_IMPORT_ERROR}"
+        )
+        return mask01.astype(np.uint8)
+
+    mask_bool = mask01.astype(bool)
+
+    # Remove tiny false-positive detected areas
+    if POST_MIN_OBJECT_SIZE > 0:
+        mask_bool = remove_small_objects(mask_bool, min_size=POST_MIN_OBJECT_SIZE)
+
+    # Smooth jagged/noisy edges by removing tiny protrusions
+    if POST_OPENING_RADIUS > 0:
+        mask_bool = binary_opening(mask_bool, footprint=disk(POST_OPENING_RADIUS))
+
+    # Close small gaps and connect nearby mangrove regions
+    if POST_CLOSING_RADIUS > 0:
+        mask_bool = binary_closing(mask_bool, footprint=disk(POST_CLOSING_RADIUS))
+
+    # Fill small holes inside detected mangrove regions
+    if POST_HOLE_AREA_THRESHOLD > 0:
+        mask_bool = remove_small_holes(mask_bool, area_threshold=POST_HOLE_AREA_THRESHOLD)
+
+    return mask_bool.astype(np.uint8)
 
 
 # -----------------------------
@@ -647,7 +722,16 @@ def status():
         "status": "ready" if loaded_models else "not_loaded",
         "device": DEVICE,
         "loaded_models": list(loaded_models.keys()),
-        "model_in_channels": model_in_channels
+        "model_in_channels": model_in_channels,
+        "detection_threshold": DETECTION_THRESHOLD,
+        "post_processing_enabled": POST_PROCESSING_ENABLED,
+        "post_processing_available": SKIMAGE_AVAILABLE,
+        "post_processing_settings": {
+            "min_object_size": POST_MIN_OBJECT_SIZE,
+            "hole_area_threshold": POST_HOLE_AREA_THRESHOLD,
+            "opening_radius": POST_OPENING_RADIUS,
+            "closing_radius": POST_CLOSING_RADIUS
+        }
     })
 
 
@@ -729,8 +813,11 @@ def upload():
 
         prob_map = predict_mask_tiled(model_img, model_choice)
 
-        DETECTION_THRESHOLD = 0.01  
-        mask01 = (prob_map >= DETECTION_THRESHOLD).astype(np.uint8)
+        # 1. Thresholding: convert probability map into binary mask
+        raw_mask01 = (prob_map >= DETECTION_THRESHOLD).astype(np.uint8)
+
+        # 2. Post-processing: clean false-positive blobs and smooth boundaries
+        mask01 = apply_mask_post_processing(raw_mask01)
 
         run_dir = create_run_dir(RESULTS_DIR, timestamp)
         paths = build_run_paths(run_dir)
@@ -743,6 +830,19 @@ def upload():
             pixel_size_m=pixel_size_m,
             carbon_density_ton_per_ha=carbon_density
         )
+
+        # Save inference settings together with the result for traceability
+        results.update({
+            "detection_threshold": DETECTION_THRESHOLD,
+            "post_processing_enabled": POST_PROCESSING_ENABLED,
+            "post_processing_available": SKIMAGE_AVAILABLE,
+            "post_processing_settings": {
+                "min_object_size": POST_MIN_OBJECT_SIZE,
+                "hole_area_threshold": POST_HOLE_AREA_THRESHOLD,
+                "opening_radius": POST_OPENING_RADIUS,
+                "closing_radius": POST_CLOSING_RADIUS
+            }
+        })
 
         save_json(results, paths["json"])
 
@@ -763,6 +863,15 @@ def upload():
             "pixel_size_source": pixel_size_note,
             "used_model": model_choice,
             "model_in_channels": current_channels,
+            "detectionThreshold": DETECTION_THRESHOLD,
+            "postProcessingEnabled": POST_PROCESSING_ENABLED,
+            "postProcessingAvailable": SKIMAGE_AVAILABLE,
+            "postProcessingSettings": {
+                "minObjectSize": POST_MIN_OBJECT_SIZE,
+                "holeAreaThreshold": POST_HOLE_AREA_THRESHOLD,
+                "openingRadius": POST_OPENING_RADIUS,
+                "closingRadius": POST_CLOSING_RADIUS
+            },
             "warning": None
         }
 

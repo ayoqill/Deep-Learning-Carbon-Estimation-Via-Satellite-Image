@@ -220,87 +220,103 @@
   </div>
 
   <!-- Detail Modal -->
-  <div id="detailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-      <!-- Modal Header -->
-      <div class="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-center">
-        <div>
+<div id="detailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
+  <div class="bg-white rounded-2xl w-[95vw] max-w-5xl max-h-[90vh] overflow-y-auto overflow-x-hidden shadow-2xl">
 
-        </div>
-
-          <p id="modalSubtitle" class="text-sm text-gray-600 mt-1"></p>
-        </div>
-        <button id="closeModal" class="text-gray-400 hover:text-gray-600">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
-        </button>
+    <!-- Modal Header -->
+    <div class="sticky top-0 bg-white border-b border-gray-200 p-5 flex justify-between items-start z-10 rounded-t-2xl">
+      <div>
+        <h2 id="modalTitle" class="text-xl font-bold text-gray-800">Analysis Details</h2>
+        <p id="modalSubtitle" class="text-sm text-gray-600 mt-1"></p>
       </div>
 
-      <!-- Modal Content -->
-      <div class="p-6">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <!-- Images Section -->
-          <div>
-            <div id="beforeImageBlock" class="hidden">
-              <h3 class="text-lg font-semibold text-gray-800 mb-4">Before Image</h3>
-              <img id="modalOriginalImage" src="" alt="Original Image" class="w-full rounded-lg border border-gray-200 mb-6">
-            </div>
+      <button id="closeModal" class="text-gray-400 hover:text-gray-600 ml-4 flex-shrink-0">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
 
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">After Detection</h3>
-            <img id="modalResultImage" src="" alt="Result Image" class="w-full rounded-lg border border-gray-200">
+    <!-- Modal Content -->
+    <div class="p-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+        <!-- Images Section -->
+        <div class="min-w-0">
+          <div id="beforeImageBlock" class="hidden">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Before Image</h3>
+            <img
+              id="modalOriginalImage"
+              src=""
+              alt="Original Image"
+              class="w-full rounded-lg border border-gray-200 mb-6"
+            >
           </div>
 
-          <!-- Statistics Section -->
-          <div>
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">📊 Statistics</h3>
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">After Detection</h3>
+          <img
+            id="modalResultImage"
+            src=""
+            alt="Result Image"
+            class="w-full rounded-lg border border-gray-200"
+          >
+        </div>
 
-            <div class="space-y-3">
-              <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
-                <span class="text-gray-700 font-medium">Mangrove Coverage:</span>
-                <span id="statCoverage" class="font-semibold text-gray-800">-</span>
-              </div>
+        <!-- Statistics Section -->
+        <div class="min-w-0">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">📊 Statistics</h3>
 
-              <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
-                <span class="text-gray-700 font-medium">Total Area (Hectares):</span>
-                <span id="statAreaHa" class="font-semibold text-gray-800">-</span>
-              </div>
+          <div class="space-y-3">
 
-              <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
-                <span class="text-gray-700 font-medium">Total Area (m²):</span>
-                <span id="statAreaM2" class="font-semibold text-gray-800">-</span>
-              </div>
-
-              <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
-                <span class="text-gray-700 font-medium">Carbon Stock (tons):</span>
-                <span id="statCarbon" class="font-semibold text-gray-800">-</span>
-              </div>
-
-              <div class="flex justify-between items-center p-3 bg-gray-800 rounded-lg">
-                <span class="text-white font-medium">CO₂ Equivalent (tons):</span>
-                <span id="statCO2" class="font-semibold text-white">-</span>
-              </div>
-
-              <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200 mt-6">
-                <span class="text-gray-700 font-medium">Model Used:</span>
-                <span id="statModel" class="font-semibold text-gray-800">-</span>
-              </div>
-
-              <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
-                <span class="text-gray-700 font-medium">Pixel Size (m):</span>
-                <span id="statPixelSize" class="font-semibold text-gray-800">-</span>
-              </div>
-
-              <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
-                <span class="text-gray-700 font-medium">Analysis Date:</span>
-                <span id="statDate" class="font-semibold text-gray-800">-</span>
-              </div>
+            <div class="flex justify-between items-center gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <span class="text-gray-700 font-medium">Mangrove Coverage:</span>
+              <span id="statCoverage" class="font-semibold text-gray-800 text-right">-</span>
             </div>
+
+            <div class="flex justify-between items-center gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <span class="text-gray-700 font-medium">Total Area (Hectares):</span>
+              <span id="statAreaHa" class="font-semibold text-gray-800 text-right">-</span>
+            </div>
+
+            <div class="flex justify-between items-center gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <span class="text-gray-700 font-medium">Total Area (m²):</span>
+              <span id="statAreaM2" class="font-semibold text-gray-800 text-right">-</span>
+            </div>
+
+            <div class="flex justify-between items-center gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <span class="text-gray-700 font-medium">Carbon Stock (tons):</span>
+              <span id="statCarbon" class="font-semibold text-gray-800 text-right">-</span>
+            </div>
+
+            <div class="flex justify-between items-center gap-4 p-3 bg-gray-800 rounded-lg">
+              <span class="text-white font-medium">CO₂ Equivalent (tons):</span>
+              <span id="statCO2" class="font-semibold text-white text-right">-</span>
+            </div>
+
+            <div class="flex justify-between items-center gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200 mt-6">
+              <span class="text-gray-700 font-medium">Model Used:</span>
+              <span id="statModel" class="font-semibold text-gray-800 text-right">-</span>
+            </div>
+
+            <div class="flex justify-between items-center gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <span class="text-gray-700 font-medium">Pixel Size (m):</span>
+              <span id="statPixelSize" class="font-semibold text-gray-800 text-right break-all">-</span>
+            </div>
+
+            <div class="flex justify-between items-center gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <span class="text-gray-700 font-medium">Analysis Date:</span>
+              <span id="statDate" class="font-semibold text-gray-800 text-right">-</span>
+            </div>
+
           </div>
         </div>
+
       </div>
     </div>
+
   </div>
+</div>
 
   <!-- Toast -->
   <div id="toast" class="fixed top-6 left-1/2 transform -translate-x-1/2 -translate-y-20 opacity-0 px-6 py-4 bg-green-500 text-white font-semibold rounded-xl shadow-2xl transition-all duration-300 z-50 max-w-md text-center"></div>
