@@ -34,6 +34,11 @@ load_dotenv()
 
 import numpy as np
 import torch
+import gc
+
+torch.set_num_threads(1)
+torch.set_grad_enabled(False)
+
 import segmentation_models_pytorch as smp
 
 # Optional post-processing tools. Add `scikit-image` to requirements.txt for this to work.
@@ -317,41 +322,58 @@ def load_model(model_name: str = "deeplabv3") -> bool:
         logger.error(f"Model not found: {MODEL_PATH}")
         return False
 
-    logger.info(f"Loading DeepLabV3+ from: {MODEL_PATH}")
+    try:
+        logger.info(f"Loading DeepLabV3+ from: {MODEL_PATH}")
 
-    state = torch.load(MODEL_PATH, map_location=DEVICE)
+        # Always load checkpoint to CPU first to reduce device/memory issue
+        state = torch.load(MODEL_PATH, map_location="cpu")
+        logger.info("✅ Checkpoint loaded into CPU memory")
 
-    if isinstance(state, dict) and "state_dict" in state and isinstance(state["state_dict"], dict):
-        state = state["state_dict"]
+        if isinstance(state, dict) and "state_dict" in state and isinstance(state["state_dict"], dict):
+            state = state["state_dict"]
 
-    if isinstance(state, dict) and "model" in state and isinstance(state["model"], dict):
-        state = state["model"]
+        if isinstance(state, dict) and "model" in state and isinstance(state["model"], dict):
+            state = state["model"]
 
-    if not isinstance(state, dict):
-        logger.error("Unsupported checkpoint format. Expected state_dict dict.")
+        if not isinstance(state, dict):
+            logger.error("Unsupported checkpoint format. Expected state_dict dict.")
+            return False
+
+        state = _strip_module_prefix(state)
+        channels = _infer_in_channels_from_state_dict(state)
+
+        model_in_channels["deeplabv3"] = channels
+        logger.info(f"Detected DeepLabV3+ in_channels: {channels}")
+
+        # Build model on CPU first
+        model = smp.DeepLabV3Plus(
+            encoder_name=ENCODER_NAME,
+            encoder_weights=ENCODER_WEIGHTS,
+            in_channels=channels,
+            classes=1,
+            activation=None
+        )
+
+        logger.info("✅ DeepLabV3+ architecture created")
+
+        model.load_state_dict(state, strict=True)
+        logger.info("✅ Model weights loaded")
+
+        # Free checkpoint memory before storing model
+        del state
+        gc.collect()
+
+        model = model.to(DEVICE)
+        model.eval()
+
+        loaded_models["deeplabv3"] = model
+
+        logger.info("✅ DeepLabV3+ loaded and ready.")
+        return True
+
+    except Exception as e:
+        logger.exception(f"❌ Failed to load model: {e}")
         return False
-
-    state = _strip_module_prefix(state)
-    channels = _infer_in_channels_from_state_dict(state)
-
-    model_in_channels["deeplabv3"] = channels
-    logger.info(f"Detected DeepLabV3+ in_channels: {channels}")
-
-    model = smp.DeepLabV3Plus(
-        encoder_name=ENCODER_NAME,
-        encoder_weights=ENCODER_WEIGHTS,
-        in_channels=channels,
-        classes=1,
-        activation=None
-    ).to(DEVICE)
-
-    model.load_state_dict(state, strict=True)
-    model.eval()
-
-    loaded_models["deeplabv3"] = model
-
-    logger.info("✅ DeepLabV3+ loaded and ready.")
-    return True
 
 
 # -----------------------------
