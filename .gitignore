@@ -75,3 +75,12 @@ sam2/models--facebook--sam2.1-hiera-large/
 
 # Node modules (if using web frontend)
 node_modules/
+
+# Local database
+app_data.db
+*.db
+
+# Uploaded files
+uploads/
+static/uploads/
+instance/
