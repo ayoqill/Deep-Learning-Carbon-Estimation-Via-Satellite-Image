@@ -33,6 +33,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import numpy as np
+from PIL import Image
 import torch
 import gc
 
@@ -253,7 +254,7 @@ TILE_H, TILE_W = 160, 160
 
 # Tiling params
 TILE_OVERLAP = 32
-BATCH_TILES = 24
+BATCH_TILES = int(os.getenv("BATCH_TILES", "8"))
 
 # If PNG/JPG has no geo metadata
 DEFAULT_PIXEL_SIZE_M = 10.0
@@ -746,6 +747,7 @@ def status():
         "loaded_models": list(loaded_models.keys()),
         "model_in_channels": model_in_channels,
         "detection_threshold": DETECTION_THRESHOLD,
+        "batch_tiles": BATCH_TILES,
         "post_processing_enabled": POST_PROCESSING_ENABLED,
         "post_processing_available": SKIMAGE_AVAILABLE,
         "post_processing_settings": {
@@ -755,6 +757,69 @@ def status():
             "closing_radius": POST_CLOSING_RADIUS
         }
     })
+
+
+
+# -----------------------------
+# Display preview helper
+# -----------------------------
+def _normalize_rgb_for_preview(rgb_img: np.ndarray) -> np.ndarray:
+    """
+    Convert RGB display image into uint8 PNG-friendly format.
+
+    Important:
+    - This is ONLY for display.
+    - It must NOT be used for model prediction.
+    - For GeoTIFF/TOA values, it applies a simple percentile stretch so the image
+      does not look too dark or washed out in the web app.
+    """
+    img = np.asarray(rgb_img)
+
+    if img.ndim == 2:
+        img = np.stack([img, img, img], axis=-1)
+
+    if img.ndim != 3:
+        raise ValueError(f"rgb_img must be HxWxC, got shape {img.shape}")
+
+    if img.shape[2] == 1:
+        img = np.repeat(img, 3, axis=2)
+    elif img.shape[2] > 3:
+        img = img[:, :, :3]
+
+    img = img.astype(np.float32)
+    img = np.nan_to_num(img, nan=0.0, posinf=0.0, neginf=0.0)
+
+    max_val = float(np.max(img)) if img.size else 0.0
+    min_val = float(np.min(img)) if img.size else 0.0
+
+    # Already normalized image, usually from PNG/JPG loader
+    if max_val <= 1.0 and min_val >= 0.0:
+        img = img * 255.0
+        return np.clip(img, 0, 255).astype(np.uint8)
+
+    # Already 8-bit image
+    if max_val <= 255.0 and min_val >= 0.0:
+        return np.clip(img, 0, 255).astype(np.uint8)
+
+    # TOA / UInt16 / reflectance-style image display stretch
+    out = np.zeros_like(img, dtype=np.float32)
+    for c in range(3):
+        band = img[:, :, c]
+        low, high = np.percentile(band, [2, 98])
+
+        if high <= low:
+            out[:, :, c] = 0
+        else:
+            out[:, :, c] = (band - low) / (high - low) * 255.0
+
+    return np.clip(out, 0, 255).astype(np.uint8)
+
+
+def save_rgb_preview_png(rgb_img: np.ndarray, output_path: Path):
+    """Save display-only RGB preview PNG."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    preview_uint8 = _normalize_rgb_for_preview(rgb_img)
+    Image.fromarray(preview_uint8).save(output_path)
 
 
 # -----------------------------
@@ -818,9 +883,26 @@ def upload():
     try:
         current_channels = model_in_channels[model_choice]
 
+        # Correct pipeline:
+        # - model_img keeps the original raw band order for prediction.
+        # - rgb_img is only for display preview, usually RGB = Band 3, Band 2, Band 1.
         model_img, rgb_img, pixel_size_from_tif, tif_source = load_image_any(
             upload_path,
             model_in_channels=current_channels
+        )
+
+        if model_img.ndim != 3:
+            raise ValueError(f"model_img must be HxWxC, got shape {model_img.shape}")
+
+        if model_img.shape[2] != current_channels:
+            raise ValueError(
+                f"Model expects {current_channels} channels, but image loader returned "
+                f"{model_img.shape[2]} channels"
+            )
+
+        logger.info(
+            f"Loaded image source={tif_source}, "
+            f"model_img_shape={model_img.shape}, rgb_img_shape={rgb_img.shape}"
         )
 
         if pixel_size_from_tif is not None:
@@ -833,16 +915,22 @@ def upload():
             pixel_size_m = DEFAULT_PIXEL_SIZE_M
             pixel_size_note = "default"
 
+        run_dir = create_run_dir(RESULTS_DIR, timestamp)
+        paths = build_run_paths(run_dir)
+
+        # Save normal-looking uploaded preview for frontend/history.
+        # Do not point frontend directly to raw TIFF because browser preview can look wrong.
+        preview_path = run_dir / "uploaded_preview.png"
+        save_rgb_preview_png(rgb_img, preview_path)
+
         prob_map = predict_mask_tiled(model_img, model_choice)
+        logger.info(f"Prob map min={prob_map.min():.6f}, max={prob_map.max():.6f}, mean={prob_map.mean():.6f}")
 
         # 1. Thresholding: convert probability map into binary mask
         raw_mask01 = (prob_map >= DETECTION_THRESHOLD).astype(np.uint8)
 
         # 2. Post-processing: clean false-positive blobs and smooth boundaries
         mask01 = apply_mask_post_processing(raw_mask01)
-
-        run_dir = create_run_dir(RESULTS_DIR, timestamp)
-        paths = build_run_paths(run_dir)
 
         save_mask_png(mask01, paths["mask"])
         save_overlay_png(rgb_img, mask01, paths["overlay"])
@@ -870,7 +958,9 @@ def upload():
 
         response = {
             "success": True,
-            "uploaded": f"/uploads/{upload_name}",
+            # uploaded = display preview, rawUploaded = original uploaded file
+            "uploaded": f"/results/run_{timestamp}/uploaded_preview.png",
+            "rawUploaded": f"/uploads/{upload_name}",
             "overlay": f"/results/run_{timestamp}/overlay.png",
             "mask": f"/results/run_{timestamp}/pred_mask.png",
             "json": f"/results/run_{timestamp}/step5_results.json",
@@ -885,6 +975,9 @@ def upload():
             "pixel_size_source": pixel_size_note,
             "used_model": model_choice,
             "model_in_channels": current_channels,
+            "imageSource": tif_source,
+            "modelImageShape": list(model_img.shape),
+            "rgbImageShape": list(rgb_img.shape),
             "detectionThreshold": DETECTION_THRESHOLD,
             "postProcessingEnabled": POST_PROCESSING_ENABLED,
             "postProcessingAvailable": SKIMAGE_AVAILABLE,
@@ -908,7 +1001,8 @@ def upload():
             timestamp=timestamp,
             results=results,
             model_choice=model_choice,
-            username=current_user.username
+            username=current_user.username,
+            original_image_path=f"/results/run_{timestamp}/uploaded_preview.png"
         )
 
         return jsonify(response)
@@ -1120,7 +1214,7 @@ def get_study_area(study_area_id):
 # ============================
 # Helper: Save analysis to SQLite
 # ============================
-def save_analysis_result(upload_name, timestamp, results, model_choice, username=None):
+def save_analysis_result(upload_name, timestamp, results, model_choice, username=None, original_image_path=None):
     try:
         title = upload_name.replace(f"upload_{timestamp}_", "")
 
@@ -1128,7 +1222,7 @@ def save_analysis_result(upload_name, timestamp, results, model_choice, username
             username=username,
             title=title,
             location="",
-            original_image_path=f"/uploads/{upload_name}",
+            original_image_path=original_image_path or f"/uploads/{upload_name}",
             result_image_path=f"/results/run_{timestamp}/overlay.png",
             mask_path=f"/results/run_{timestamp}/pred_mask.png",
             model=model_choice,
