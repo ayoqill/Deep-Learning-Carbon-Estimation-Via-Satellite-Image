@@ -7,6 +7,14 @@ Mangrove Carbon Mapper is a Flask-based web application that detects mangrove ar
 This project was developed as a Final Year Project (FYP) prototype to support faster mangrove monitoring and carbon estimation using remote sensing and artificial intelligence.
 
 ---
+<img width="1671" height="945" alt="Screenshot 2026-05-13 at 5 08 54 PM" src="https://github.com/user-attachments/assets/0d45fe8e-897f-4be6-a905-17030e9808ae" />
+
+<img width="1671" height="945" alt="Screenshot 2026-05-13 at 5 09 25 PM" src="https://github.com/user-attachments/assets/b789c1dd-1842-44e2-b5b5-609b0a46c5d0" />
+
+<img width="1640" height="938" alt="Screenshot 2026-05-13 at 5 09 44 PM" src="https://github.com/user-attachments/assets/35c95bec-0543-44d7-befa-b515fc3d708c" />
+
+<img width="1644" height="950" alt="Screenshot 2026-05-13 at 5 10 16 PM" src="https://github.com/user-attachments/assets/9dc2c8f7-5a9a-49d0-94f2-f4129166e8e1" />
+
 
 ## Project Overview
 
@@ -486,7 +494,7 @@ Carbon estimation: Implemented using literature-based density value
 
 ## Author
 
-**Amir Hakim**  
+**Aqil Aiman**  
 Final Year Project  
 Bachelor of Computer Science  
 International Islamic University Malaysia (IIUM)
